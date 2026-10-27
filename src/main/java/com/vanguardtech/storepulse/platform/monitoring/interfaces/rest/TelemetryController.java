@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.serviceexecutionmonitoring.interfaces.rest;
+package com.vanguardtech.storepulse.platform.monitoring.interfaces.rest;
 
 public class TelemetryController {
 }

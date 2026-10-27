@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.serviceexecutionmonitoring.domain.services;
+package com.vanguardtech.storepulse.platform.monitoring.domain.services;
 
 public interface MonitoringRuleCommandService {
 }

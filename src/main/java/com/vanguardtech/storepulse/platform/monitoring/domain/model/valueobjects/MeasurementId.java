@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.serviceexecutionmonitoring.domain.model.valueobjects;
+package com.vanguardtech.storepulse.platform.monitoring.domain.model.valueobjects;
 
 public record MeasurementId() {
 }

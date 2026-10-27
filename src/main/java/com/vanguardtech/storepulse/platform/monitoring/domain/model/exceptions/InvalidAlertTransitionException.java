@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.serviceexecutionmonitoring.domain.model.exceptions;
+package com.vanguardtech.storepulse.platform.monitoring.domain.model.exceptions;
 
 public class InvalidAlertTransitionException {
 }

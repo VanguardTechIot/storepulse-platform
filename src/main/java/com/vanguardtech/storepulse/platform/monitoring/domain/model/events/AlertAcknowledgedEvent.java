@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.serviceexecutionmonitoring.domain.model.events;
+package com.vanguardtech.storepulse.platform.monitoring.domain.model.events;
 
 public class AlertAcknowledgedEvent {
 }

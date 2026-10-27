@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.serviceexecutionmonitoring.domain.model.queries;
+package com.vanguardtech.storepulse.platform.monitoring.domain.model.queries;
 
 public record GetAllTelemetryQuery() {
 }

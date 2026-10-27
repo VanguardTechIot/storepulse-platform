@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.serviceexecutionmonitoring.interfaces.acl;
+package com.vanguardtech.storepulse.platform.monitoring.interfaces.acl;
 
 public class MonitoringContextFacade {
 }

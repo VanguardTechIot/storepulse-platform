@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.serviceexecutionmonitoring.domain.model.commands;
+package com.vanguardtech.storepulse.platform.monitoring.domain.model.commands;
 
 public record CreateMonitoringRuleCommand() {
 }

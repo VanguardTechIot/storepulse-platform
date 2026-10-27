@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.serviceexecutionmonitoring.interfaces.rest.resources;
+package com.vanguardtech.storepulse.platform.monitoring.interfaces.rest.resources;
 
 public record ConsumptionResource() {
 }

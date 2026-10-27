@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.serviceexecutionmonitoring.application.internal.outboundservices.acl;
+package com.vanguardtech.storepulse.platform.monitoring.application.internal.outboundservices.acl;
 
 public class ExternalResourceAssetService {
 }

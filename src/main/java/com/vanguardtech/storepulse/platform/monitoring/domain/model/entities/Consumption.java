@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.serviceexecutionmonitoring.domain.model.entities;
+package com.vanguardtech.storepulse.platform.monitoring.domain.model.entities;
 
 public class Consumption {
 }

@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.serviceexecutionmonitoring.interfaces.rest.transform;
+package com.vanguardtech.storepulse.platform.monitoring.interfaces.rest.transform;
 
 public class AlertResourceFromEntityAssembler {
 }

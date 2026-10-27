@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.serviceexecutionmonitoring.application.internal.queryservices;
+package com.vanguardtech.storepulse.platform.monitoring.application.internal.queryservices;
 
 public class MonitoringRuleQueryServiceImpl {
 }

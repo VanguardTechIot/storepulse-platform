@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.serviceexecutionmonitoring.domain.model.aggregates;
+package com.vanguardtech.storepulse.platform.monitoring.domain.model.aggregates;
 
 public class MonitoringRule {
 }
