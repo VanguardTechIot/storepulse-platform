@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.shared.domain.model.entities;
+package com.vanguardtech.storepulse.platform.shared.domain.model.aggregates;
 
 
 import jakarta.persistence.*;
