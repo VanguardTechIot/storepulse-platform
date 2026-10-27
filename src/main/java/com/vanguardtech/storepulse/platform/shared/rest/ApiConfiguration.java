@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.shared.infrastructure.interfaces.rest;
+package com.vanguardtech.storepulse.platform.shared.rest;
 
 
 import org.springframework.context.annotation.Configuration;
