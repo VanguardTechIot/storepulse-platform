@@ -1,6 +1,6 @@
-package com.vanguardtech.storepulse.platform.resourceassetmanagement.domain.model.commands;
+package com.vanguardtech.storepulse.platform.assets.domain.model.commands;
 
-import com.vanguardtech.storepulse.platform.resourceassetmanagement.domain.model.valueobjects.IoTDeviceType;
+import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.IoTDeviceType;
 
 public record RegisterIoTDeviceCommand(String serialNumber, IoTDeviceType type, Long resourceId) {
     public RegisterIoTDeviceCommand{

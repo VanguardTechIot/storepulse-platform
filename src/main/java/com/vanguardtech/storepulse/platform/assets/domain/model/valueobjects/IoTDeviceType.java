@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.resourceassetmanagement.domain.model.valueobjects;
+package com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects;
 
 public enum IoTDeviceType {
     INTRUSION_NODE,

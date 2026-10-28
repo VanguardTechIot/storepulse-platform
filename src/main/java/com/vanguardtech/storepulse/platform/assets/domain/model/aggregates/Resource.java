@@ -1,7 +1,7 @@
-package com.vanguardtech.storepulse.platform.resourceassetmanagement.domain.model.aggregates;
+package com.vanguardtech.storepulse.platform.assets.domain.model.aggregates;
 
-import com.vanguardtech.storepulse.platform.resourceassetmanagement.domain.model.valueobjects.AssetStatus;
-import com.vanguardtech.storepulse.platform.resourceassetmanagement.domain.model.valueobjects.Location;
+import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.AssetStatus;
+import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.Location;
 import com.vanguardtech.storepulse.platform.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import jakarta.persistence.*;
 import lombok.Getter;

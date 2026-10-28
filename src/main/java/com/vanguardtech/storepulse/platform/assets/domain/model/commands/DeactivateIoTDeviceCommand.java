@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.resourceassetmanagement.domain.model.commands;
+package com.vanguardtech.storepulse.platform.assets.domain.model.commands;
 
 public record DeactivateIoTDeviceCommand(Long iotDeviceId, String reason) {
     public DeactivateIoTDeviceCommand{

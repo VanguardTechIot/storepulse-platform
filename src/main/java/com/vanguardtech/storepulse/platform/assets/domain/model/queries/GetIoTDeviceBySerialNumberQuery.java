@@ -1,4 +1,4 @@
-package com.vanguardtech.storepulse.platform.resourceassetmanagement.domain.model.queries;
+package com.vanguardtech.storepulse.platform.assets.domain.model.queries;
 
 public record GetIoTDeviceBySerialNumberQuery(String serialNumber) {
     public GetIoTDeviceBySerialNumberQuery {
