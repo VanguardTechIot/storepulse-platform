@@ -49,8 +49,4 @@ public class Payment extends AuditableAbstractAggregateRoot<Payment> {
         this.status = status;
         this.gatewayReference = gatewayReference;
     }
-
-    public boolean isAccepted() {
-        return status == PaymentStatus.ACCEPTED;
-    }
 }
