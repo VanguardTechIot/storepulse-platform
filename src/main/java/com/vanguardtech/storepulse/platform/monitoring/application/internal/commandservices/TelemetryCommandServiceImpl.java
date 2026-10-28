@@ -30,6 +30,8 @@ public class TelemetryCommandServiceImpl implements TelemetryCommandService {
     @Override
     @Transactional
     public Telemetry handle(RegisterTelemetryCommand command) {
+        if (!externalResourceAssetService.isDeviceActive(command.deviceId()))
+            throw new IllegalArgumentException("IoT device " + command.deviceId() + " does not exist or is not active");
         var telemetry = new Telemetry(command.deviceId(), command.receivedAt());
         command.measurements().forEach(measurement -> telemetry.addMeasurement(
                 measurement.type(), new MeasurementValue(measurement.value()), measurement.recordedAt()));
