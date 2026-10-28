@@ -1,4 +1,7 @@
 package com.vanguardtech.storepulse.platform.monitoring.interfaces.rest.resources;
 
-public record TelemetryResource() {
+import java.time.Instant;
+import java.util.List;
+
+public record TelemetryResource(Long id, Long deviceId, Instant receivedAt, List<MeasurementResource> measurements) {
 }
