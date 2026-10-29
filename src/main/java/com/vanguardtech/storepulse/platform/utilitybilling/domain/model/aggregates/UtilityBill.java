@@ -3,8 +3,11 @@ package com.vanguardtech.storepulse.platform.utilitybilling.domain.model.aggrega
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
 import com.vanguardtech.storepulse.platform.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.exceptions.UtilityBillingError;
-import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.valueobjects.BillingItem;
+import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.entities.BillingItem;
+import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.events.UtilityBillGeneratedEvent;
+import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.events.UtilityBillIssuedEvent;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.valueobjects.BillingPeriod;
+import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.valueobjects.UtilityBillId;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.valueobjects.UtilityBillStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -21,7 +24,8 @@ import java.util.List;
 
 /**
  * Utility bill (water and electricity) of one commercial unit for one period. It is born as a
- * draft, its data is verified and then the gallery administrator issues it.
+ * draft, its data is verified and then the gallery administrator issues it. The breakdown that
+ * supports the charge lives inside the bill.
  */
 @Entity
 @Table(name = "utility_bills")
@@ -35,6 +39,7 @@ public class UtilityBill extends AuditableAbstractAggregateRoot<UtilityBill> {
     @Column(nullable = false, unique = true)
     private String code;
 
+    /** Unit managed by Property Management; there is no physical foreign key across contexts. */
     @Column(nullable = false)
     private Long unitId;
 
@@ -45,15 +50,19 @@ public class UtilityBill extends AuditableAbstractAggregateRoot<UtilityBill> {
     private String tenantName;
 
     @Embedded
-    private BillingPeriod period;
+    @AttributeOverrides({
+            @AttributeOverride(name = "startDate", column = @Column(name = "billing_period_start", nullable = false)),
+            @AttributeOverride(name = "endDate", column = @Column(name = "billing_period_end", nullable = false))
+    })
+    private BillingPeriod billingPeriod;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UtilityBillStatus status;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "utility_bill_items", joinColumns = @JoinColumn(name = "bill_id"))
-    private List<BillingItem> items = new ArrayList<>();
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JoinColumn(name = "utility_bill_id")
+    private List<BillingItem> breakdown = new ArrayList<>();
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
@@ -61,34 +70,39 @@ public class UtilityBill extends AuditableAbstractAggregateRoot<UtilityBill> {
     /** Percentage (0-100) of the expected readings received for the period. */
     private int dataCompleteness;
 
-    /** The administrator issued the bill accepting incomplete data. */
+    /** The administrator verified the bill accepting incomplete data. */
     private boolean dataWarningAccepted;
 
     private Instant issuedAt;
     private LocalDate dueDate;
 
-    public UtilityBill(Long unitId, String unitCode, String unitName, String tenantName, BillingPeriod period,
-                       List<BillingItem> items, int dataCompleteness) {
-        if (unitId == null || unitId <= 0 || unitCode == null || unitCode.isBlank() || period == null
-                || items == null || items.isEmpty() || dataCompleteness < 0 || dataCompleteness > 100)
+    public UtilityBill(Long unitId, String unitCode, String unitName, String tenantName,
+                       BillingPeriod billingPeriod, List<BillingItem> breakdown, int dataCompleteness) {
+        if (unitId == null || unitId <= 0 || unitCode == null || unitCode.isBlank() || billingPeriod == null
+                || breakdown == null || breakdown.isEmpty() || dataCompleteness < 0 || dataCompleteness > 100)
             throw new BusinessRuleException(UtilityBillingError.INVALID_BILL);
         this.unitId = unitId;
         this.unitCode = unitCode;
         this.unitName = unitName;
         this.tenantName = tenantName;
-        this.period = period;
-        this.items = new ArrayList<>(items);
-        this.totalAmount = items.stream().map(BillingItem::getAmount)
+        this.billingPeriod = billingPeriod;
+        this.breakdown = new ArrayList<>(breakdown);
+        this.totalAmount = breakdown.stream().map(BillingItem::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2);
         this.dataCompleteness = dataCompleteness;
         this.dataWarningAccepted = false;
         this.status = UtilityBillStatus.DRAFT;
-        this.code = "FAC-%s-%s".formatted(period.startDate().format(DateTimeFormatter.ofPattern("yyyyMM")),
+        this.code = "FAC-%s-%s".formatted(billingPeriod.startDate().format(DateTimeFormatter.ofPattern("yyyyMM")),
                 unitCode.replace("-", ""));
     }
 
-    public List<BillingItem> getItems() {
-        return List.copyOf(items);
+    public List<BillingItem> getBreakdown() {
+        return List.copyOf(breakdown);
+    }
+
+    /** Announces the bill. Call it once the bill is saved, because the event carries its identifier. */
+    public void generate() {
+        registerEvent(new UtilityBillGeneratedEvent(new UtilityBillId(getId()), Instant.now()));
     }
 
     /** DRAFT to DATA_VERIFIED. Incomplete data needs the administrator's explicit acceptance. */
@@ -109,9 +123,10 @@ public class UtilityBill extends AuditableAbstractAggregateRoot<UtilityBill> {
         this.issuedAt = at;
         this.dueDate = at.atZone(ZoneOffset.UTC).toLocalDate().plusDays(PAYMENT_TERM_DAYS);
         this.status = UtilityBillStatus.ISSUED;
+        registerEvent(new UtilityBillIssuedEvent(new UtilityBillId(getId()), unitId, at));
     }
 
-    /** ISSUED to IN_DISPUTE, when a tenant opens a dispute over the bill. */
+    /** ISSUED to IN_DISPUTE, when a tenant raises a dispute over the bill. */
     public void markInDispute() {
         if (status != UtilityBillStatus.ISSUED && status != UtilityBillStatus.IN_DISPUTE)
             throw new BusinessRuleException(UtilityBillingError.INVALID_TRANSITION);
