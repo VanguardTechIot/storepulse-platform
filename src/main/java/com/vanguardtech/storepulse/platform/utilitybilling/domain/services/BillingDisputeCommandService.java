@@ -1,12 +1,15 @@
 package com.vanguardtech.storepulse.platform.utilitybilling.domain.services;
 
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.aggregates.BillingDispute;
-import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.commands.ResolveDisputeCommand;
-import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.commands.StartDisputeReviewCommand;
+import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.commands.RaiseBillingDisputeCommand;
+import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.commands.ResolveBillingDisputeCommand;
+import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.commands.ReviewBillingDisputeCommand;
 
 public interface BillingDisputeCommandService {
 
-    BillingDispute handle(StartDisputeReviewCommand command);
+    BillingDispute handle(RaiseBillingDisputeCommand command);
 
-    BillingDispute handle(ResolveDisputeCommand command);
+    BillingDispute handle(ReviewBillingDisputeCommand command);
+
+    BillingDispute handle(ResolveBillingDisputeCommand command);
 }
