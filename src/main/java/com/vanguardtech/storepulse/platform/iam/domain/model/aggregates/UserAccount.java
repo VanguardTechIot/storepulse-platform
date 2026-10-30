@@ -1,7 +1,7 @@
 package com.vanguardtech.storepulse.platform.iam.domain.model.aggregates;
 
 import com.vanguardtech.storepulse.platform.iam.domain.model.events.PasswordChangedEvent;
-import com.vanguardtech.storepulse.platform.iam.domain.model.events.PasswordResetRequestedEvent;
+import com.vanguardtech.storepulse.platform.iam.domain.model.events.PasswordResetEvent;
 import com.vanguardtech.storepulse.platform.iam.domain.model.events.SessionEndedEvent;
 import com.vanguardtech.storepulse.platform.iam.domain.model.events.UserRegisteredEvent;
 import com.vanguardtech.storepulse.platform.iam.domain.model.events.UserSignedInEvent;
@@ -103,7 +103,7 @@ public class UserAccount extends AuditableAbstractAggregateRoot<UserAccount> {
      * @param at moment of the request
      */
     public void requestPasswordReset(Instant at) {
-        registerEvent(new PasswordResetRequestedEvent(requirePersistedId(), email.address(), at));
+        registerEvent(new PasswordResetEvent(requirePersistedId(), email.address(), at));
     }
 
     /**
