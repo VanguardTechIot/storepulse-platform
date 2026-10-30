@@ -12,6 +12,6 @@ import java.time.Instant;
  * @param expiresAt  moment from which the code is no longer accepted
  * @param occurredOn moment the code was generated
  */
-public record PasswordResetCodeGeneratedEvent(Long userId, Instant expiresAt, Instant occurredOn)
+public record PasswordGeneratedEvent(Long userId, Instant expiresAt, Instant occurredOn)
         implements DomainEvent {
 }
