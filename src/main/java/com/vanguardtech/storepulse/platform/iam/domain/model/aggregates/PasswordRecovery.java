@@ -1,6 +1,6 @@
 package com.vanguardtech.storepulse.platform.iam.domain.model.aggregates;
 
-import com.vanguardtech.storepulse.platform.iam.domain.model.events.PasswordResetCodeGeneratedEvent;
+import com.vanguardtech.storepulse.platform.iam.domain.model.events.PasswordGeneratedEvent;
 import com.vanguardtech.storepulse.platform.iam.domain.model.valueobjects.UserId;
 import com.vanguardtech.storepulse.platform.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import jakarta.persistence.*;
@@ -63,7 +63,7 @@ public class PasswordRecovery extends AuditableAbstractAggregateRoot<PasswordRec
         this.expiresAt = requestedAt.plus(VALIDITY);
         this.failedAttempts = 0;
         this.used = false;
-        registerEvent(new PasswordResetCodeGeneratedEvent(userId.userId(), expiresAt, requestedAt));
+        registerEvent(new PasswordGeneratedEvent(userId.userId(), expiresAt, requestedAt));
     }
 
     /**
