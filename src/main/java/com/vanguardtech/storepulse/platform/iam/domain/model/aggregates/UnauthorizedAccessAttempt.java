@@ -1,7 +1,7 @@
 package com.vanguardtech.storepulse.platform.iam.domain.model.aggregates;
 
 import com.vanguardtech.storepulse.platform.iam.domain.exceptions.IamError;
-import com.vanguardtech.storepulse.platform.iam.domain.model.events.UnauthorizedAccessAttemptLoggedEvent;
+import com.vanguardtech.storepulse.platform.iam.domain.model.events.UnauthorizedAccessEvent;
 import com.vanguardtech.storepulse.platform.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -50,7 +50,7 @@ public class UnauthorizedAccessAttempt extends AuditableAbstractAggregateRoot<Un
         this.userId = userId;
         this.reason = reason;
         this.attemptedAt = attemptedAt;
-        registerEvent(new UnauthorizedAccessAttemptLoggedEvent(email, userId, reason.name().toLowerCase(),
+        registerEvent(new UnauthorizedAccessEvent(email, userId, reason.name().toLowerCase(),
                 attemptedAt));
     }
 }
