@@ -9,6 +9,7 @@ public record AlertResource(
         Long id,
         Long safetyRuleId,
         Long deviceId,
+        Long measurementId,
         SensorType sensorType,
         Double measuredValue,
         AlertStatus status,
