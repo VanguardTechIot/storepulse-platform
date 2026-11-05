@@ -24,6 +24,8 @@ public class Alert extends AuditableAbstractAggregateRoot<Alert> {
     @Column(nullable = false)
     private Long deviceId;
 
+    private Long measurementId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SensorType sensorType;
@@ -47,17 +49,21 @@ public class Alert extends AuditableAbstractAggregateRoot<Alert> {
     protected Alert() {
     }
 
-    public Alert(Long safetyRuleId, Long deviceId, SensorType sensorType, Double measuredValue, Instant detectedAt) {
+    public Alert(Long safetyRuleId, Long deviceId, Long measurementId, SensorType sensorType, Double measuredValue,
+                 Instant detectedAt) {
         if (safetyRuleId == null || safetyRuleId <= 0)
             throw new IllegalArgumentException("Safety rule ID must be a positive number");
         if (deviceId == null || deviceId <= 0)
             throw new IllegalArgumentException("Device ID must be a positive number");
+        if (measurementId == null || measurementId <= 0)
+            throw new IllegalArgumentException("Measurement ID must be a positive number");
         if (sensorType == null)
             throw new IllegalArgumentException("Sensor type is required");
         if (measuredValue == null)
             throw new IllegalArgumentException("Measured value is required");
         this.safetyRuleId = safetyRuleId;
         this.deviceId = deviceId;
+        this.measurementId = measurementId;
         this.sensorType = sensorType;
         this.measuredValue = measuredValue;
         this.status = AlertStatus.ACTIVE;

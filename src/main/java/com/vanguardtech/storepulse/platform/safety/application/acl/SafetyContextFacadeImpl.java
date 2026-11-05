@@ -17,9 +17,10 @@ public class SafetyContextFacadeImpl implements SafetyContextFacade {
     private final AlertCommandService alertCommandService;
 
     @Override
-    public SafetyEvaluation evaluate(Long deviceId, String measurementType, Double value, Instant recordedAt) {
+    public SafetyEvaluation evaluate(Long deviceId, Long measurementId, String measurementType, Double value,
+                                     Instant recordedAt) {
         var assessment = alertCommandService.handle(new EvaluateMeasurementCommand(
-                deviceId, SensorType.valueOf(measurementType), value, recordedAt));
+                deviceId, measurementId, SensorType.valueOf(measurementType), value, recordedAt));
         return new SafetyEvaluation(
                 assessment.deviceStatus().name(), assessment.response().name(), assessment.alertTriggered());
     }

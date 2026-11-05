@@ -10,6 +10,7 @@ public class AlertResourceFromEntityAssembler {
                 entity.getId(),
                 entity.getSafetyRuleId(),
                 entity.getDeviceId(),
+                entity.getMeasurementId(),
                 entity.getSensorType(),
                 entity.getMeasuredValue(),
                 entity.getStatus(),
