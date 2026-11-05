@@ -25,7 +25,8 @@ public class ExternalSafetyService {
 
     private MeasurementEvaluation evaluate(Long deviceId, Measurement measurement) {
         var evaluation = safetyContextFacade.evaluate(
-                deviceId, measurement.getType().name(), measurement.getValue().value(), measurement.getRecordedAt());
+                deviceId, measurement.getId(), measurement.getType().name(), measurement.getValue().value(),
+                measurement.getRecordedAt());
         return new MeasurementEvaluation(
                 measurement.getType(), evaluation.deviceStatus(), evaluation.response(), evaluation.alertTriggered());
     }

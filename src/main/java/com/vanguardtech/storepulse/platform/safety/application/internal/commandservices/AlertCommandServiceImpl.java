@@ -39,7 +39,8 @@ public class AlertCommandServiceImpl implements AlertCommandService {
             return new MeasurementAssessment(
                     refreshDeviceState(command.deviceId(), command.recordedAt()), ResponseAction.NONE, false);
         alertRepository.save(new Alert(
-                rule.get().getId(), command.deviceId(), command.sensorType(), command.value(), command.recordedAt()));
+                rule.get().getId(), command.deviceId(), command.measurementId(), command.sensorType(), command.value(),
+                command.recordedAt()));
         return new MeasurementAssessment(
                 refreshDeviceState(command.deviceId(), command.recordedAt()), rule.get().getResponseAction(), true);
     }
