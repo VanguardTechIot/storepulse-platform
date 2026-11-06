@@ -15,5 +15,6 @@ public enum UtilityBillingError {
     INVALID_AMOUNT,
     INVALID_PERIOD,
     INVALID_BILL,
-    TARIFF_NOT_FOUND
+    TARIFF_NOT_FOUND,
+    NO_CONSUMPTION_DATA
 }
