@@ -8,6 +8,9 @@ import com.vanguardtech.storepulse.platform.assets.domain.model.entities.IoTDevi
 import com.vanguardtech.storepulse.platform.assets.domain.services.AssetCommandService;
 import com.vanguardtech.storepulse.platform.assets.infrastructure.persistence.jpa.repositories.AssetRepository;
 import com.vanguardtech.storepulse.platform.assets.infrastructure.persistence.jpa.repositories.ResourceRepository;
+import com.vanguardtech.storepulse.platform.assets.domain.exceptions.AssetsError;
+import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
+import com.vanguardtech.storepulse.platform.shared.domain.exceptions.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -27,10 +30,10 @@ public class AssetCommandServiceImpl implements AssetCommandService {
     public Optional<Asset> handle(RegisterIoTDeviceCommand command){
         var serialNumber = command.serialNumber().trim().toUpperCase();
         if (assetRepository.existsByIotDevice_SerialNumber(serialNumber))
-            throw new IllegalArgumentException("The identifier" + serialNumber + " is already registered");
+            throw new BusinessRuleException(AssetsError.SERIAL_NUMBER_ALREADY_REGISTERED);
 
         var resource = resourceRepository.findById(command.resourceId())
-                .orElseThrow(() -> new IllegalArgumentException("Resource with id " + command.resourceId() + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(AssetsError.RESOURCE_NOT_FOUND));
 
         var device = new IoTDevice(serialNumber, command.type(), null, null);
         var asset = new Asset(resource.getId(), "Iot node" + resource.getName(), device);
@@ -51,8 +54,8 @@ public class AssetCommandServiceImpl implements AssetCommandService {
         return Optional.of(assetRepository.save(asset));
     }
 
-    private Asset findByDeviceId(Long iotDeviceId){
+    private Asset findByDeviceId(Long iotDeviceId) {
         return assetRepository.findByIotDevice_Id(iotDeviceId)
-                .orElseThrow(() -> new IllegalArgumentException("IoT device" + iotDeviceId + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(AssetsError.IOT_DEVICE_NOT_FOUND));
     }
 }
