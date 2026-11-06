@@ -4,6 +4,7 @@ import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.q
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.services.SubscriptionQueryService;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.interfaces.rest.resources.SubscriptionPlanResource;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.interfaces.rest.transform.SubscriptionPlanResourceFromEntityAssembler;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,7 @@ public class SubscriptionPlansController {
 
     private final SubscriptionQueryService subscriptionQueryService;
 
+    @Operation(summary = "Get the published subscription plans")
     @GetMapping
     public List<SubscriptionPlanResource> getAllSubscriptionPlans() {
         return subscriptionQueryService.handle(new GetAllSubscriptionPlansQuery()).stream()

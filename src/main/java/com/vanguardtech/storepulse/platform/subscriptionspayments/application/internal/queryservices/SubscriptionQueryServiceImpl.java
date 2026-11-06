@@ -6,10 +6,10 @@ import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.a
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.queries.GetAllSubscriptionPlansQuery;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.queries.GetPaymentsBySubscriptionIdQuery;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.queries.GetSubscriptionByGalleryIdQuery;
+import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.repositories.PaymentRepository;
+import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.repositories.SubscriptionPlanRepository;
+import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.repositories.SubscriptionRepository;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.services.SubscriptionQueryService;
-import com.vanguardtech.storepulse.platform.subscriptionspayments.infrastructure.persistence.jpa.repositories.PaymentRepository;
-import com.vanguardtech.storepulse.platform.subscriptionspayments.infrastructure.persistence.jpa.repositories.SubscriptionPlanRepository;
-import com.vanguardtech.storepulse.platform.subscriptionspayments.infrastructure.persistence.jpa.repositories.SubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

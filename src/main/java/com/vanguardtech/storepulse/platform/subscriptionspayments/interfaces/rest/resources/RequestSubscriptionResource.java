@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 
-public record RequestSubscriptionResource(@NotNull Long galleryId, @NotNull Long galleryAdministratorId,
+public record RequestSubscriptionResource(@NotNull Long galleryId,
                                           @NotNull @PositiveOrZero Integer monitoredUnitCount, @NotNull Long planId,
                                           @NotNull BillingCycle billingCycle, @NotNull PaymentMethod paymentMethod,
                                           @NotBlank String cardNumber, @NotBlank String cardExpiry) {
