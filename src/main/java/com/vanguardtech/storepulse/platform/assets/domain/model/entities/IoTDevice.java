@@ -4,6 +4,8 @@ package com.vanguardtech.storepulse.platform.assets.domain.model.entities;
 import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.AssetStatus;
 import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.ConnectivityStatus;
 import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.IoTDeviceType;
+import com.vanguardtech.storepulse.platform.assets.domain.exceptions.AssetsError;
+import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -100,17 +102,17 @@ public class IoTDevice {
                 && (supplyVoltage < MIN_SUPPLY_VOLTAGE || supplyVoltage > MAX_SUPPLY_VOLTAGE);
     }
 
-    /** Stops data reception: the stand if left without monitoring until it is reactivated. */
-    public void deactivate(String reason){
+    /** Stops data reception; the stand is left without monitoring until it is reactivated. */
+    public void deactivate(String reason) {
         if (!isActive())
-            throw new IllegalStateException("Device " + serialNumber + " is already inactive");
+            throw new BusinessRuleException(AssetsError.IOT_DEVICE_ALREADY_INACTIVE);
         this.status = AssetStatus.INACTIVE;
         this.deactivationReason = reason;
     }
 
-    public void reactivate(){
+    public void reactivate() {
         if (isActive())
-            throw new IllegalStateException("Device " + serialNumber + " is already active");
+            throw new BusinessRuleException(AssetsError.IOT_DEVICE_ALREADY_ACTIVE);
         this.status = AssetStatus.ACTIVE;
         this.deactivationReason = null;
     }
