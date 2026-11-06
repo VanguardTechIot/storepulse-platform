@@ -3,8 +3,10 @@ package com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
 import com.vanguardtech.storepulse.platform.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.exceptions.SubscriptionsError;
+import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.valueobjects.AdministratorId;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.valueobjects.BillingCycle;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.valueobjects.BillingPeriod;
+import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.valueobjects.GalleryId;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.valueobjects.SubscriptionStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -23,10 +25,12 @@ import java.time.Instant;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Subscription extends AuditableAbstractAggregateRoot<Subscription> {
 
-    @Column(unique = true, nullable = false)
-    private Long galleryId;
+    @Embedded
+    private GalleryId galleryId;
 
-    private Long galleryAdministratorId;
+    @Embedded
+    private AdministratorId galleryAdministratorId;
+
     private Long planId;
 
     @Enumerated(EnumType.STRING)
@@ -42,7 +46,7 @@ public class Subscription extends AuditableAbstractAggregateRoot<Subscription> {
     private boolean autoRenewal;
     private String paymentMethodLabel;
 
-    public Subscription(Long galleryId, Long galleryAdministratorId, SubscriptionPlan plan, BillingCycle cycle,
+    public Subscription(GalleryId galleryId, AdministratorId galleryAdministratorId, SubscriptionPlan plan, BillingCycle cycle,
                         int monitoredUnitCount) {
         requireUnitsAllowed(plan, monitoredUnitCount);
         this.galleryId = galleryId;
