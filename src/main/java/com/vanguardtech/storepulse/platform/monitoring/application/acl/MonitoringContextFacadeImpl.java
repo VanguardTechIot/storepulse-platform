@@ -1,6 +1,7 @@
 package com.vanguardtech.storepulse.platform.monitoring.application.acl;
 
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.aggregates.Consumption;
+import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetAllConsumptionQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetConsumptionByResourceIdQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetSensorStatusByDeviceIdQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.valueobjects.MeasurementType;
@@ -9,6 +10,8 @@ import com.vanguardtech.storepulse.platform.monitoring.domain.services.Consumpti
 import com.vanguardtech.storepulse.platform.monitoring.domain.services.SensorStatusQueryService;
 import com.vanguardtech.storepulse.platform.monitoring.interfaces.acl.MonitoringContextFacade;
 import org.springframework.stereotype.Service;
+
+import java.time.Instant;
 
 @Service
 public class MonitoringContextFacadeImpl implements MonitoringContextFacade {
@@ -37,6 +40,17 @@ public class MonitoringContextFacadeImpl implements MonitoringContextFacade {
         var type = MeasurementType.valueOf(measurementType);
         return consumptionQueryService.handle(new GetConsumptionByResourceIdQuery(resourceId)).stream()
                 .filter(consumption -> consumption.getMeasurementType() == type)
+                .mapToDouble(Consumption::getTotalValue)
+                .sum();
+    }
+
+    @Override
+    public Double fetchCurrentMonthConsumption(String measurementType) {
+        var type = MeasurementType.valueOf(measurementType);
+        var currentPeriod = Consumption.startOf(Consumption.periodOf(Instant.now()));
+        return consumptionQueryService.handle(new GetAllConsumptionQuery()).stream()
+                .filter(consumption -> consumption.getMeasurementType() == type
+                        && consumption.getPeriodStart().equals(currentPeriod))
                 .mapToDouble(Consumption::getTotalValue)
                 .sum();
     }
