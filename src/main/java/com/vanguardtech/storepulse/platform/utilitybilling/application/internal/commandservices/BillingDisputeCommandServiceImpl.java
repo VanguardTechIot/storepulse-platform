@@ -1,6 +1,8 @@
 package com.vanguardtech.storepulse.platform.utilitybilling.application.internal.commandservices;
 
+import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.ResourceNotFoundException;
+import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalIamService;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.exceptions.UtilityBillingError;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.aggregates.BillingDispute;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.commands.RaiseBillingDisputeCommand;
@@ -22,16 +24,19 @@ public class BillingDisputeCommandServiceImpl implements BillingDisputeCommandSe
 
     private final BillingDisputeRepository disputeRepository;
     private final UtilityBillRepository billRepository;
+    private final ExternalIamService externalIamService;
 
     /** Registers the dispute and puts its bill in dispute, so only an issued bill can be disputed. */
     @Override
     @Transactional
     public BillingDispute handle(RaiseBillingDisputeCommand command) {
+        var tenantId = externalIamService.fetchAuthenticatedUserId()
+                .orElseThrow(() -> new BusinessRuleException(UtilityBillingError.TENANT_REQUIRED));
         var bill = billRepository.findById(command.utilityBillId())
                 .orElseThrow(() -> new ResourceNotFoundException(UtilityBillingError.NOT_FOUND));
         bill.markInDispute();
         billRepository.save(bill);
-        var dispute = disputeRepository.save(new BillingDispute(command.utilityBillId(), command.tenantId(),
+        var dispute = disputeRepository.save(new BillingDispute(command.utilityBillId(), tenantId,
                 command.reason(), command.description()));
         dispute.raise();
         return disputeRepository.save(dispute);
