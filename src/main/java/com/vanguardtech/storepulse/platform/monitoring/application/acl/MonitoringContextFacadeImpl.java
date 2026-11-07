@@ -12,6 +12,7 @@ import com.vanguardtech.storepulse.platform.monitoring.interfaces.acl.Monitoring
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.YearMonth;
 
 @Service
 public class MonitoringContextFacadeImpl implements MonitoringContextFacade {
@@ -53,5 +54,17 @@ public class MonitoringContextFacadeImpl implements MonitoringContextFacade {
                         && consumption.getPeriodStart().equals(currentPeriod))
                 .mapToDouble(Consumption::getTotalValue)
                 .sum();
+    }
+
+    @Override
+    public Double fetchMonthlyConsumption(Long resourceId, String measurementType, YearMonth month) {
+        var type = MeasurementType.valueOf(measurementType);
+        var periodStart = Consumption.startOf(month);
+        return consumptionQueryService.handle(new GetConsumptionByResourceIdQuery(resourceId)).stream()
+                .filter(consumption -> consumption.getMeasurementType() == type
+                        && consumption.getPeriodStart().equals(periodStart))
+                .findFirst()
+                .map(Consumption::getTotalValue)
+                .orElse(null);
     }
 }
