@@ -6,8 +6,10 @@ import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetT
 import com.vanguardtech.storepulse.platform.monitoring.domain.services.TelemetryCommandService;
 import com.vanguardtech.storepulse.platform.monitoring.domain.services.TelemetryQueryService;
 import com.vanguardtech.storepulse.platform.monitoring.interfaces.rest.resources.RegisterTelemetryResource;
+import com.vanguardtech.storepulse.platform.monitoring.interfaces.rest.resources.TelemetryRegistrationResource;
 import com.vanguardtech.storepulse.platform.monitoring.interfaces.rest.resources.TelemetryResource;
 import com.vanguardtech.storepulse.platform.monitoring.interfaces.rest.transform.RegisterTelemetryCommandFromResourceAssembler;
+import com.vanguardtech.storepulse.platform.monitoring.interfaces.rest.transform.TelemetryRegistrationResourceFromResultAssembler;
 import com.vanguardtech.storepulse.platform.monitoring.interfaces.rest.transform.TelemetryResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,11 +38,11 @@ public class TelemetryController {
 
     @Operation(summary = "Register telemetry sent by a device through the edge gateway")
     @PostMapping(consumes = APPLICATION_JSON_VALUE)
-    public ResponseEntity<TelemetryResource> registerTelemetry(@Valid @RequestBody RegisterTelemetryResource resource) {
+    public ResponseEntity<TelemetryRegistrationResource> registerTelemetry(@Valid @RequestBody RegisterTelemetryResource resource) {
         var command = RegisterTelemetryCommandFromResourceAssembler.toCommandFromResource(resource);
-        var telemetry = telemetryCommandService.handle(command);
+        var registration = telemetryCommandService.handle(command);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(TelemetryResourceFromEntityAssembler.toResourceFromEntity(telemetry));
+                .body(TelemetryRegistrationResourceFromResultAssembler.toResourceFromResult(registration));
     }
 
     @Operation(summary = "Get telemetry, optionally filtered by device")

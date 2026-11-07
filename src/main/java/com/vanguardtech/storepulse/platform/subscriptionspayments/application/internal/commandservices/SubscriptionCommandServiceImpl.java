@@ -3,6 +3,7 @@ package com.vanguardtech.storepulse.platform.subscriptionspayments.application.i
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.ResourceNotFoundException;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.application.internal.outboundservices.PaymentGateway;
+import com.vanguardtech.storepulse.platform.subscriptionspayments.application.internal.outboundservices.acl.ExternalIamService;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.exceptions.SubscriptionsError;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.aggregates.Payment;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.aggregates.Subscription;
@@ -11,13 +12,14 @@ import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.c
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.commands.ReactivateRenewalCommand;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.commands.RequestSubscriptionCommand;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.commands.SeedSubscriptionPlansCommand;
+import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.valueobjects.AdministratorId;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.valueobjects.PaymentCard;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.valueobjects.PaymentStatus;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.valueobjects.PlanCode;
+import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.repositories.PaymentRepository;
+import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.repositories.SubscriptionPlanRepository;
+import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.repositories.SubscriptionRepository;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.services.SubscriptionCommandService;
-import com.vanguardtech.storepulse.platform.subscriptionspayments.infrastructure.persistence.jpa.repositories.PaymentRepository;
-import com.vanguardtech.storepulse.platform.subscriptionspayments.infrastructure.persistence.jpa.repositories.SubscriptionPlanRepository;
-import com.vanguardtech.storepulse.platform.subscriptionspayments.infrastructure.persistence.jpa.repositories.SubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +38,7 @@ public class SubscriptionCommandServiceImpl implements SubscriptionCommandServic
     private final SubscriptionRepository subscriptionRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentGateway paymentGateway;
+    private final ExternalIamService externalIamService;
 
     /**
      * Contracts the plan (or changes to it) and pays it. The subscription is activated only when the
@@ -43,12 +46,14 @@ public class SubscriptionCommandServiceImpl implements SubscriptionCommandServic
      */
     @Override
     public Subscription handle(RequestSubscriptionCommand command) {
+        var administratorId = authenticatedAdministratorId();
         var plan = planRepository.findById(command.planId())
                 .orElseThrow(() -> new ResourceNotFoundException(SubscriptionsError.PLAN_NOT_FOUND));
         var card = PaymentCard.of(command.cardNumber(), command.cardExpiry(), YearMonth.now(ZoneOffset.UTC));
         var subscription = subscriptionRepository.findByGalleryId(command.galleryId())
+                .map(existing -> ownedBy(existing, administratorId))
                 .orElseGet(() -> subscriptionRepository.save(new Subscription(command.galleryId(),
-                        command.galleryAdministratorId(), plan, command.billingCycle(), command.monitoredUnitCount())));
+                        administratorId, plan, command.billingCycle(), command.monitoredUnitCount())));
 
         var now = Instant.now();
         var amount = plan.priceFor(command.billingCycle());
@@ -76,19 +81,33 @@ public class SubscriptionCommandServiceImpl implements SubscriptionCommandServic
     @Override
     public void handle(SeedSubscriptionPlansCommand command) {
         if (planRepository.count() > 0) return;
-        planRepository.saveAll(List.of(
-                new SubscriptionPlan(PlanCode.BASIC, 30, BigDecimal.valueOf(290), BigDecimal.valueOf(2900),
-                        List.of("security_incidents", "energy_submetering", "notification_center")),
-                new SubscriptionPlan(PlanCode.COMMERCIAL, 100, BigDecimal.valueOf(690), BigDecimal.valueOf(6900),
-                        List.of("everything_basic", "water_telemetry", "billing_per_unit", "tenant_communication")),
-                new SubscriptionPlan(PlanCode.CORPORATE, null, BigDecimal.valueOf(1490), BigDecimal.valueOf(14900),
-                        List.of("everything_commercial", "multiple_galleries", "advanced_reports"))));
+        List.of(
+                        new SubscriptionPlan(PlanCode.BASIC, 30, BigDecimal.valueOf(290), BigDecimal.valueOf(2900),
+                                List.of("security_incidents", "energy_submetering", "notification_center")),
+                        new SubscriptionPlan(PlanCode.COMMERCIAL, 100, BigDecimal.valueOf(690), BigDecimal.valueOf(6900),
+                                List.of("everything_basic", "water_telemetry", "billing_per_unit", "tenant_communication")),
+                        new SubscriptionPlan(PlanCode.CORPORATE, null, BigDecimal.valueOf(1490), BigDecimal.valueOf(14900),
+                                List.of("everything_commercial", "multiple_galleries", "advanced_reports")))
+                .forEach(planRepository::save);
     }
 
     private Subscription update(Long subscriptionId, Consumer<Subscription> change) {
         var subscription = subscriptionRepository.findById(subscriptionId)
+                .map(existing -> ownedBy(existing, authenticatedAdministratorId()))
                 .orElseThrow(() -> new ResourceNotFoundException(SubscriptionsError.SUBSCRIPTION_NOT_FOUND));
         change.accept(subscription);
         return subscriptionRepository.save(subscription);
+    }
+
+    private AdministratorId authenticatedAdministratorId() {
+        return externalIamService.fetchAuthenticatedAdministratorId()
+                .orElseThrow(() -> new BusinessRuleException(SubscriptionsError.ADMINISTRATOR_NOT_ACTIVE));
+    }
+
+    /** Another administrator's subscription is answered as not found, so its existence is not revealed. */
+    private static Subscription ownedBy(Subscription subscription, AdministratorId administratorId) {
+        if (!subscription.getGalleryAdministratorId().equals(administratorId))
+            throw new ResourceNotFoundException(SubscriptionsError.SUBSCRIPTION_NOT_FOUND);
+        return subscription;
     }
 }

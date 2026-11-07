@@ -6,6 +6,7 @@ import com.vanguardtech.storepulse.platform.shared.domain.exceptions.ResourceNot
 import com.vanguardtech.storepulse.platform.shared.interfaces.rest.resources.ErrorResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -37,6 +38,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessRuleException.class)
     public ResponseEntity<ErrorResource> handleBusinessRule(BusinessRuleException exception) {
         return build(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResource> handleAccessDenied(AccessDeniedException exception) {
+        return build(HttpStatus.FORBIDDEN, "access_denied");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

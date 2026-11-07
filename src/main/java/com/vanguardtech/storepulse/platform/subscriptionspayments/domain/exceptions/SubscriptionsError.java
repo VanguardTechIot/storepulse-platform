@@ -2,6 +2,7 @@ package com.vanguardtech.storepulse.platform.subscriptionspayments.domain.except
 
 /** Business outcomes that prevent a subscription operation from completing. */
 public enum SubscriptionsError {
+    ADMINISTRATOR_NOT_ACTIVE,
     PLAN_NOT_FOUND,
     SUBSCRIPTION_NOT_FOUND,
     UNIT_LIMIT_EXCEEDED,

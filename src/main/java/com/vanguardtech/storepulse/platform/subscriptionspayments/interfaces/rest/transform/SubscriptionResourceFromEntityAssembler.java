@@ -7,8 +7,8 @@ public class SubscriptionResourceFromEntityAssembler {
 
     public static SubscriptionResource toResourceFromEntity(Subscription subscription) {
         var period = subscription.getBillingPeriod();
-        return new SubscriptionResource(subscription.getId(), subscription.getGalleryId(),
-                subscription.getGalleryAdministratorId(), subscription.getPlanId(), subscription.getStatus().name(),
+        return new SubscriptionResource(subscription.getId(), subscription.getGalleryId().value(),
+                subscription.getGalleryAdministratorId().value(), subscription.getPlanId(), subscription.getStatus().name(),
                 subscription.getBillingCycle().name(), period == null ? null : period.startDate(),
                 period == null ? null : period.endDate(), subscription.getMonitoredUnitCount(),
                 subscription.isAutoRenewal(), subscription.getPaymentMethodLabel());

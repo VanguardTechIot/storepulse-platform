@@ -1,13 +1,17 @@
 package com.vanguardtech.storepulse.platform.assets.domain.model.entities;
 
 
+import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.ActuatorType;
 import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.AssetStatus;
 import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.ConnectivityStatus;
 import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.IoTDeviceType;
+import com.vanguardtech.storepulse.platform.assets.domain.exceptions.AssetsError;
+import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
 import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.time.Instant;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +26,9 @@ public class IoTDevice {
 
     public static final double MIN_SUPPLY_VOLTAGE = 4.5;
     public static final double MAX_SUPPLY_VOLTAGE = 5.5;
+
+    /** Time without reports after which the device is considered disconnected. */
+    public static final Duration DISCONNECTION_THRESHOLD = Duration.ofMinutes(15);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -59,7 +66,7 @@ public class IoTDevice {
     @CollectionTable(name = "iot_device_actuators", joinColumns = @JoinColumn(name = "iot_device_id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "type")
-    private List<AccessType> actuators = new ArrayList<>();
+    private List<ActuatorType> actuators = new ArrayList<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "iot_device_id")
@@ -90,8 +97,15 @@ public class IoTDevice {
         return status == AssetStatus.ACTIVE;
     }
 
-    public boolean isConnected() {
-        return isActive() && connectivity == ConnectivityStatus.CONNECTED;
+    /** Connected while the last report is recent; disconnected if it never reported or stopped reporting. */
+    public ConnectivityStatus getConnectivity() {
+        if (lastReportAt == null || lastReportAt.isBefore(Instant.now().minus(DISCONNECTION_THRESHOLD)))
+            return ConnectivityStatus.DISCONNECTED;
+        return ConnectivityStatus.CONNECTED;
+    }
+
+    public boolean isDisconnected() {
+        return isActive() && getConnectivity() == ConnectivityStatus.DISCONNECTED;
     }
 
     /** A device is faulty when its last supply voltage is outside the accepted range. */
@@ -100,19 +114,31 @@ public class IoTDevice {
                 && (supplyVoltage < MIN_SUPPLY_VOLTAGE || supplyVoltage > MAX_SUPPLY_VOLTAGE);
     }
 
-    /** Stops data reception: the stand if left without monitoring until it is reactivated. */
-    public void deactivate(String reason){
+    /** Stops data reception; the stand is left without monitoring until it is reactivated. */
+    public void deactivate(String reason) {
         if (!isActive())
-            throw new IllegalStateException("Device " + serialNumber + " is already inactive");
+            throw new BusinessRuleException(AssetsError.IOT_DEVICE_ALREADY_INACTIVE);
         this.status = AssetStatus.INACTIVE;
         this.deactivationReason = reason;
     }
 
-    public void reactivate(){
+    public void reactivate() {
         if (isActive())
-            throw new IllegalStateException("Device " + serialNumber + " is already active");
+            throw new BusinessRuleException(AssetsError.IOT_DEVICE_ALREADY_ACTIVE);
         this.status = AssetStatus.ACTIVE;
         this.deactivationReason = null;
+    }
+
+    /**
+     * Records that the device reported. Voltage and buffered events are only updated when the
+     * report includes them. Reports from an inactive device are ignored.
+     */
+    public void recordReport(Instant reportedAt, Double supplyVoltage, Integer bufferedEvents) {
+        if (!isActive()) return;
+        this.lastReportAt = reportedAt;
+        this.connectivity = ConnectivityStatus.CONNECTED;
+        if (supplyVoltage != null) this.supplyVoltage = supplyVoltage;
+        if (bufferedEvents != null) this.bufferedEvents = bufferedEvents;
     }
 
     public void addSensor(Sensor sensor){
@@ -123,7 +149,7 @@ public class IoTDevice {
         meters.add(meter);
     }
 
-    public void addActuator(AccessType actuator){
+    public void addActuator(ActuatorType actuator){
         if(!actuators.contains(actuator))
             actuators.add(actuator);
     }
