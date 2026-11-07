@@ -3,6 +3,7 @@ package com.vanguardtech.storepulse.platform.assets.application.internal.command
 import com.vanguardtech.storepulse.platform.assets.domain.model.aggregates.Asset;
 import com.vanguardtech.storepulse.platform.assets.domain.model.commands.DeactivateIoTDeviceCommand;
 import com.vanguardtech.storepulse.platform.assets.domain.model.commands.ReactivateIoTDeviceCommand;
+import com.vanguardtech.storepulse.platform.assets.domain.model.commands.RecordIoTDeviceReportCommand;
 import com.vanguardtech.storepulse.platform.assets.domain.model.commands.RegisterIoTDeviceCommand;
 import com.vanguardtech.storepulse.platform.assets.domain.model.entities.IoTDevice;
 import com.vanguardtech.storepulse.platform.assets.domain.services.AssetCommandService;
@@ -51,6 +52,13 @@ public class AssetCommandServiceImpl implements AssetCommandService {
     public Optional<Asset> handle(ReactivateIoTDeviceCommand command) {
         var asset = findByDeviceId(command.iotDeviceId());
         asset.reactivateDevice();
+        return Optional.of(assetRepository.save(asset));
+    }
+
+    @Override
+    public Optional<Asset> handle(RecordIoTDeviceReportCommand command) {
+        var asset = findByDeviceId(command.iotDeviceId());
+        asset.recordDeviceReport(command.reportedAt(), command.supplyVoltage(), command.bufferedEvents());
         return Optional.of(assetRepository.save(asset));
     }
 
