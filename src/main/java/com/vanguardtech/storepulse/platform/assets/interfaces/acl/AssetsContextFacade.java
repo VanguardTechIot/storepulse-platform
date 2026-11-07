@@ -1,5 +1,6 @@
 package com.vanguardtech.storepulse.platform.assets.interfaces.acl;
 
+import java.time.Instant;
 import java.util.Optional;
 
 public interface AssetsContextFacade {
@@ -9,4 +10,7 @@ public interface AssetsContextFacade {
 
     /** Tells whether the device exists and is active, so its readings should be processed. */
     boolean isIoTDeviceActive(Long iotDeviceId);
+
+    /** Records that a device reported; called when its telemetry arrives. */
+    void recordIoTDeviceReport(Long iotDeviceId, Instant reportedAt, Double supplyVoltage, Integer bufferedEvents);
 }
