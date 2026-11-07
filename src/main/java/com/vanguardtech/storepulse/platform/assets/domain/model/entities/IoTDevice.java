@@ -1,6 +1,7 @@
 package com.vanguardtech.storepulse.platform.assets.domain.model.entities;
 
 
+import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.ActuatorType;
 import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.AssetStatus;
 import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.ConnectivityStatus;
 import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.IoTDeviceType;
@@ -10,6 +11,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.time.Instant;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +26,9 @@ public class IoTDevice {
 
     public static final double MIN_SUPPLY_VOLTAGE = 4.5;
     public static final double MAX_SUPPLY_VOLTAGE = 5.5;
+
+    /** Time without reports after which the device is considered disconnected. */
+    public static final Duration DISCONNECTION_THRESHOLD = Duration.ofMinutes(15);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -61,7 +66,7 @@ public class IoTDevice {
     @CollectionTable(name = "iot_device_actuators", joinColumns = @JoinColumn(name = "iot_device_id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "type")
-    private List<AccessType> actuators = new ArrayList<>();
+    private List<ActuatorType> actuators = new ArrayList<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "iot_device_id")
@@ -92,8 +97,15 @@ public class IoTDevice {
         return status == AssetStatus.ACTIVE;
     }
 
-    public boolean isConnected() {
-        return isActive() && connectivity == ConnectivityStatus.CONNECTED;
+    /** Connected while the last report is recent; disconnected if it never reported or stopped reporting. */
+    public ConnectivityStatus getConnectivity() {
+        if (lastReportAt == null || lastReportAt.isBefore(Instant.now().minus(DISCONNECTION_THRESHOLD)))
+            return ConnectivityStatus.DISCONNECTED;
+        return ConnectivityStatus.CONNECTED;
+    }
+
+    public boolean isDisconnected() {
+        return isActive() && getConnectivity() == ConnectivityStatus.DISCONNECTED;
     }
 
     /** A device is faulty when its last supply voltage is outside the accepted range. */
@@ -125,7 +137,7 @@ public class IoTDevice {
         meters.add(meter);
     }
 
-    public void addActuator(AccessType actuator){
+    public void addActuator(ActuatorType actuator){
         if(!actuators.contains(actuator))
             actuators.add(actuator);
     }
