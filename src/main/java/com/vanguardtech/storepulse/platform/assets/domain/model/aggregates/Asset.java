@@ -7,6 +7,8 @@ import com.vanguardtech.storepulse.platform.shared.domain.model.aggregates.Audit
 import jakarta.persistence.*;
 import lombok.Getter;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "assets")
 @Getter
@@ -50,5 +52,9 @@ public class Asset extends AuditableAbstractAggregateRoot<Asset> {
     public void reactivateDevice(){
         iotDevice.reactivate();
         this.status = AssetStatus.ACTIVE;
+    }
+
+    public void recordDeviceReport(Instant reportedAt, Double supplyVoltage, Integer bufferedEvents) {
+        iotDevice.recordReport(reportedAt, supplyVoltage, bufferedEvents);
     }
 }

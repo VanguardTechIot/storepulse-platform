@@ -129,6 +129,18 @@ public class IoTDevice {
         this.deactivationReason = null;
     }
 
+    /**
+     * Records that the device reported. Voltage and buffered events are only updated when the
+     * report includes them. Reports from an inactive device are ignored.
+     */
+    public void recordReport(Instant reportedAt, Double supplyVoltage, Integer bufferedEvents) {
+        if (!isActive()) return;
+        this.lastReportAt = reportedAt;
+        this.connectivity = ConnectivityStatus.CONNECTED;
+        if (supplyVoltage != null) this.supplyVoltage = supplyVoltage;
+        if (bufferedEvents != null) this.bufferedEvents = bufferedEvents;
+    }
+
     public void addSensor(Sensor sensor){
         sensors.add(sensor);
     }
