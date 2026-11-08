@@ -30,6 +30,8 @@ public enum PropertyManagementError {
     /** Only pending invitations can be revoked or accepted. */
     INVITATION_NOT_PENDING,
     INVITATION_EXPIRED,
+    /** The invitation was sent to another email than the one of the tenant who accepts it. */
+    INVITATION_EMAIL_MISMATCH,
     /** The request does not come from an active gallery administrator. */
     ADMINISTRATOR_NOT_AUTHENTICATED
 }
