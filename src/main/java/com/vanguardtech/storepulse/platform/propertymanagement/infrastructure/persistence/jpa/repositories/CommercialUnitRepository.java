@@ -11,7 +11,6 @@ import java.util.Optional;
 public interface CommercialUnitRepository extends JpaRepository<CommercialUnit, Long> {
     List<CommercialUnit> findByGalleryIdOrderByFloorAscCodeAsc(Long galleryId);
     List<CommercialUnit> findByGalleryIdAndActiveTrue(Long galleryId);
-    Optional<CommercialUnit> findFirstByResourceIdAndActiveTrue(Long resourceId);
 
     /** The unit, only when it belongs to the gallery of the administrator. */
     @Query("select u from CommercialUnit u where u.id = :id and u.galleryId in "
