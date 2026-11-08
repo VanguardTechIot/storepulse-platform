@@ -37,7 +37,17 @@ class TenantInvitationTest {
         var later = invitation.getExpiresAt().plusSeconds(1);
 
         assertEquals(InvitationStatus.EXPIRED, invitation.statusAt(later));
-        assertEquals(PropertyManagementError.INVITATION_EXPIRED, errorOf(() -> invitation.accept(later)));
+        assertEquals(PropertyManagementError.INVITATION_EXPIRED, errorOf(() -> invitation.accept(5L, "carlos.rojas@gmail.com", later)));
+    }
+
+    @Test
+    void isAcceptedOnlyByTheInvitedEmail() {
+        var invitation = new TenantInvitation(store(), "carlos.rojas@gmail.com");
+
+        assertEquals(PropertyManagementError.INVITATION_EMAIL_MISMATCH,
+                errorOf(() -> invitation.accept(6L, "otra.persona@gmail.com", Instant.now())));
+        invitation.accept(5L, "Carlos.Rojas@gmail.com", Instant.now());
+        assertEquals(InvitationStatus.ACCEPTED, invitation.getStatus());
     }
 
     @Test
@@ -47,7 +57,7 @@ class TenantInvitationTest {
 
         assertEquals(InvitationStatus.REVOKED, invitation.statusAt(Instant.now()));
         assertEquals(PropertyManagementError.INVITATION_NOT_PENDING, errorOf(invitation::revoke));
-        assertEquals(PropertyManagementError.INVITATION_NOT_PENDING, errorOf(() -> invitation.accept(Instant.now())));
+        assertEquals(PropertyManagementError.INVITATION_NOT_PENDING, errorOf(() -> invitation.accept(5L, "carlos.rojas@gmail.com", Instant.now())));
     }
 
     @Test

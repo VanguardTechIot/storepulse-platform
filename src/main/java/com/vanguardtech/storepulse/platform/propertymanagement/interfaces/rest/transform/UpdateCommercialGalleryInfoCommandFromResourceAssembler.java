@@ -4,9 +4,9 @@ import com.vanguardtech.storepulse.platform.propertymanagement.domain.model.comm
 import com.vanguardtech.storepulse.platform.propertymanagement.interfaces.rest.resources.UpdateCommercialGalleryResource;
 
 public class UpdateCommercialGalleryInfoCommandFromResourceAssembler {
-    public static UpdateCommercialGalleryInfoCommand toCommandFromResource(Long galleryId,
+    public static UpdateCommercialGalleryInfoCommand toCommandFromResource(Long galleryId, Long administratorId,
                                                                            UpdateCommercialGalleryResource resource) {
-        return new UpdateCommercialGalleryInfoCommand(galleryId, resource.name(), resource.address(),
+        return new UpdateCommercialGalleryInfoCommand(galleryId, administratorId, resource.name(), resource.address(),
                 resource.totalUnits());
     }
 }

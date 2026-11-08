@@ -33,7 +33,7 @@ public class CommercialGalleryCommandServiceImpl implements CommercialGalleryCom
     @Override
     @Transactional
     public CommercialGallery handle(UpdateCommercialGalleryInfoCommand command) {
-        var gallery = galleryRepository.findById(command.galleryId())
+        var gallery = galleryRepository.findByIdAndAdministratorId(command.galleryId(), command.administratorId())
                 .orElseThrow(() -> new ResourceNotFoundException(PropertyManagementError.GALLERY_NOT_FOUND));
         gallery.updateInfo(command.name(), command.address(), command.totalUnits());
         return galleryRepository.save(gallery);

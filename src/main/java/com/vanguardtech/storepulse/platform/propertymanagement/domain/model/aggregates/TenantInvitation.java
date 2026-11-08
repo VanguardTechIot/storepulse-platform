@@ -1,6 +1,7 @@
 package com.vanguardtech.storepulse.platform.propertymanagement.domain.model.aggregates;
 
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.exceptions.PropertyManagementError;
+import com.vanguardtech.storepulse.platform.propertymanagement.domain.model.events.TenantInvitationAcceptedEvent;
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.model.events.TenantInvitedEvent;
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.model.valueobjects.InvitationEmail;
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.model.valueobjects.InvitationStatus;
@@ -14,7 +15,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 
 /**
- * Invitation link sent to the future tenant of a store (Aggregate Root, US-12). It is valid for
+ * Invitation link sent to the future tenant of a store (Aggregate Root). It is valid for
  * seven days; while pending it can be revoked, and a new one can be sent when it expires.
  */
 @Entity
@@ -94,12 +95,16 @@ public class TenantInvitation extends AuditableAbstractAggregateRoot<TenantInvit
         this.status = InvitationStatus.REVOKED;
     }
 
-    public void accept(Instant now) {
+    /** Only the tenant whose account uses the invited email can accept it, once and before it expires. */
+    public void accept(Long tenantId, String tenantEmail, Instant now) {
         if (!isPending())
             throw new BusinessRuleException(PropertyManagementError.INVITATION_NOT_PENDING);
         if (statusAt(now) == InvitationStatus.EXPIRED)
             throw new BusinessRuleException(PropertyManagementError.INVITATION_EXPIRED);
+        if (tenantEmail == null || !email.address().equalsIgnoreCase(tenantEmail.trim()))
+            throw new BusinessRuleException(PropertyManagementError.INVITATION_EMAIL_MISMATCH);
         this.status = InvitationStatus.ACCEPTED;
+        registerEvent(new TenantInvitationAcceptedEvent(getId(), galleryId, unitId, tenantId, now));
     }
 
     private static String newToken() {

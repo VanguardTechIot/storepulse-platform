@@ -4,7 +4,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
-/** {@code type} is STORE or COMMON_AREA; {@code businessName} applies to stores only. */
+/**
+ * {@code type} is STORE or COMMON_AREA; {@code businessName} applies to stores only;
+ * {@code resourceId} is the monitored resource of Resource and Asset Management, when there is one.
+ */
 public record RegisterCommercialUnitResource(@NotBlank String type, @NotBlank String code, @NotBlank String floor,
-                                             @NotNull @Positive Double areaSquareMeters, String businessName) {
+                                             @NotNull @Positive Double areaSquareMeters, String businessName,
+                                             @Positive Long resourceId) {
 }

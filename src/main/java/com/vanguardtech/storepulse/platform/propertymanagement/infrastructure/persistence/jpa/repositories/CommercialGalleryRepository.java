@@ -9,4 +9,6 @@ import java.util.Optional;
 public interface CommercialGalleryRepository extends JpaRepository<CommercialGallery, Long> {
     Optional<CommercialGallery> findByAdministratorId(Long administratorId);
     boolean existsByAdministratorId(Long administratorId);
+    Optional<CommercialGallery> findByIdAndAdministratorId(Long id, Long administratorId);
+    boolean existsByIdAndAdministratorId(Long id, Long administratorId);
 }
