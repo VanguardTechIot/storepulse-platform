@@ -1,5 +1,6 @@
 package com.vanguardtech.storepulse.platform.subscriptionspayments.interfaces.rest.controllers;
 
+import com.vanguardtech.storepulse.platform.subscriptionspayments.application.internal.outboundservices.acl.ExternalIamService;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.exceptions.SubscriptionsError;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.commands.CancelRenewalCommand;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.queries.GetSubscriptionByGalleryIdQuery;
@@ -46,7 +47,11 @@ class SubscriptionsControllerTest {
     @MockitoBean
     private SubscriptionQueryService subscriptionQueryService;
 
+    @MockitoBean
+    private ExternalIamService externalIamService;
+
     @Test
+    @WithMockUser(roles = "GALLERY_ADMINISTRATOR")
     void answers404WhenTheGalleryHasNoSubscription() throws Exception {
         when(subscriptionQueryService.handle(any(GetSubscriptionByGalleryIdQuery.class))).thenReturn(Optional.empty());
 

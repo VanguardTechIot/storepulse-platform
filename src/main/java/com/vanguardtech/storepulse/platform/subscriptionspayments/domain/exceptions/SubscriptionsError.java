@@ -4,6 +4,8 @@ package com.vanguardtech.storepulse.platform.subscriptionspayments.domain.except
 public enum SubscriptionsError {
     ADMINISTRATOR_NOT_ACTIVE,
     PLAN_NOT_FOUND,
+    /** The gallery does not exist or is managed by another administrator. */
+    GALLERY_NOT_FOUND,
     SUBSCRIPTION_NOT_FOUND,
     UNIT_LIMIT_EXCEEDED,
     INVALID_AMOUNT,

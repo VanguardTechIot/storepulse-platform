@@ -2,6 +2,7 @@ package com.vanguardtech.storepulse.platform.subscriptionspayments.application.i
 
 import com.vanguardtech.storepulse.platform.subscriptionspayments.application.internal.outboundservices.PaymentGateway;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.application.internal.outboundservices.acl.ExternalIamService;
+import com.vanguardtech.storepulse.platform.subscriptionspayments.application.internal.outboundservices.acl.ExternalPropertyManagementService;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.aggregates.Payment;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.aggregates.Subscription;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.aggregates.SubscriptionPlan;
@@ -57,6 +58,9 @@ class SubscriptionCommandServiceImplTest {
     @Mock
     private ExternalIamService externalIamService;
 
+    @Mock
+    private ExternalPropertyManagementService externalPropertyManagementService;
+
     @InjectMocks
     private SubscriptionCommandServiceImpl service;
 
@@ -69,6 +73,7 @@ class SubscriptionCommandServiceImplTest {
         when(externalIamService.fetchAuthenticatedAdministratorId()).thenReturn(Optional.of(ADMINISTRATOR));
         var basic = new SubscriptionPlan(PlanCode.BASIC, 30, BigDecimal.valueOf(290), BigDecimal.valueOf(2900), List.of());
         when(planRepository.findById(1L)).thenReturn(Optional.of(basic));
+        when(externalPropertyManagementService.isGalleryOfAdministrator(GALLERY, ADMINISTRATOR)).thenReturn(true);
         when(subscriptionRepository.findByGalleryId(GALLERY)).thenReturn(Optional.empty());
         when(subscriptionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
@@ -90,6 +95,17 @@ class SubscriptionCommandServiceImplTest {
 
         var error = assertThrows(ResourceNotFoundException.class, () -> service.handle(new CancelRenewalCommand(1L)));
         assertEquals("subscription_not_found", error.getMessage());
+    }
+
+    @Test
+    void rejectsAGalleryOfAnotherAdministrator() {
+        when(externalIamService.fetchAuthenticatedAdministratorId()).thenReturn(Optional.of(ADMINISTRATOR));
+        when(planRepository.findById(1L)).thenReturn(Optional.of(
+                new SubscriptionPlan(PlanCode.BASIC, 30, BigDecimal.valueOf(290), BigDecimal.valueOf(2900), List.of())));
+        when(externalPropertyManagementService.isGalleryOfAdministrator(GALLERY, ADMINISTRATOR)).thenReturn(false);
+
+        var error = assertThrows(ResourceNotFoundException.class, () -> service.handle(requestWithCard("4111111111111111")));
+        assertEquals("gallery_not_found", error.getMessage());
     }
 
     @Test
