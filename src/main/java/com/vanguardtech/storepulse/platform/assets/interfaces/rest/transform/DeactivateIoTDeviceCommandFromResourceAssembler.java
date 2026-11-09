@@ -5,8 +5,9 @@ import com.vanguardtech.storepulse.platform.assets.interfaces.rest.resources.Dea
 
 public class DeactivateIoTDeviceCommandFromResourceAssembler {
 
-    public static DeactivateIoTDeviceCommand toCommandFromResource(Long iotDeviceId, DeactivateIoTDeviceResource resource){
+    public static DeactivateIoTDeviceCommand toCommandFromResource(Long iotDeviceId, Long administratorId,
+                                                                   DeactivateIoTDeviceResource resource){
         var reason = resource == null ? null : resource.reason();
-        return new DeactivateIoTDeviceCommand(iotDeviceId, reason);
+        return new DeactivateIoTDeviceCommand(iotDeviceId, administratorId, reason);
     }
 }

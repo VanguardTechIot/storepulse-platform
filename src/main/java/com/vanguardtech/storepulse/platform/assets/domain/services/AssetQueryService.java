@@ -1,7 +1,7 @@
 package com.vanguardtech.storepulse.platform.assets.domain.services;
 
 import com.vanguardtech.storepulse.platform.assets.domain.model.aggregates.Asset;
-import com.vanguardtech.storepulse.platform.assets.domain.model.queries.GetAllIoTDevicesQuery;
+import com.vanguardtech.storepulse.platform.assets.domain.model.queries.GetIoTDevicesByResourceIdsQuery;
 import com.vanguardtech.storepulse.platform.assets.domain.model.queries.GetIoTDeviceByIdQuery;
 import com.vanguardtech.storepulse.platform.assets.domain.model.queries.GetIoTDeviceBySerialNumberQuery;
 
@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public interface AssetQueryService {
 
-    List<Asset> handle(GetAllIoTDevicesQuery query);
+    List<Asset> handle(GetIoTDevicesByResourceIdsQuery query);
     Optional<Asset> handle(GetIoTDeviceByIdQuery query);
     Optional<Asset> handle(GetIoTDeviceBySerialNumberQuery query);
 

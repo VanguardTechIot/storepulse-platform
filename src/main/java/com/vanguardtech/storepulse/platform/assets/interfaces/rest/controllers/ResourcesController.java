@@ -4,6 +4,7 @@ import com.vanguardtech.storepulse.platform.assets.domain.model.queries.GetAllRe
 import com.vanguardtech.storepulse.platform.assets.domain.services.ResourceQueryService;
 import com.vanguardtech.storepulse.platform.assets.interfaces.rest.resources.ResourceResource;
 import com.vanguardtech.storepulse.platform.assets.interfaces.rest.transform.ResourceResourceFromEntityAssembler;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +23,7 @@ public class ResourcesController {
         this.resourceQueryService = resourceQueryService;
     }
 
+    @Operation(summary = "Get the catalog of monitored resources that can be linked to the units of a gallery")
     @GetMapping
     public ResponseEntity<List<ResourceResource>> getAllResources() {
         var resources = resourceQueryService.handle(new GetAllResourcesQuery()).stream()
