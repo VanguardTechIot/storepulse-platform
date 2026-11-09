@@ -47,7 +47,7 @@ public class DemoDataLoader {
                 || context.getWebServer() == null) return;
         var api = new DemoApiClient("http://localhost:" + context.getWebServer().getPort() + ApiConfiguration.API_PREFIX);
         try {
-            if (signIn(api, ADMINISTRATOR_EMAIL) != null) return;
+            if (canSignIn(api, ADMINISTRATOR_EMAIL)) return;
             load(api);
             log.info("Demo data ready: sign in as {} or {} with the password {}", ADMINISTRATOR_EMAIL,
                     FIRST_TENANT_EMAIL, PASSWORD);
@@ -57,9 +57,10 @@ public class DemoDataLoader {
     }
 
     private void load(DemoApiClient api) {
-        var admin = api.as(signUp(api, "Carlos Rojas", ADMINISTRATOR_EMAIL, "GALLERY_ADMINISTRATOR"));
-        var firstTenant = api.as(signUp(api, "Lucia Ramos", FIRST_TENANT_EMAIL, "TENANT"));
-        var secondTenant = api.as(signUp(api, "Jorge Paredes", SECOND_TENANT_EMAIL, "TENANT"));
+        var admin = api.as(accessToken(signUp(api, "Carlos Rojas", ADMINISTRATOR_EMAIL, "GALLERY_ADMINISTRATOR")));
+        var firstTenant = api.as(accessToken(signUp(api, "Lucia Ramos", FIRST_TENANT_EMAIL, "TENANT")));
+        var secondTenantSession = signUp(api, "Jorge Paredes", SECOND_TENANT_EMAIL, "TENANT");
+        var secondTenant = api.as(accessToken(secondTenantSession));
 
         var galleryId = id(admin.post("/galleries",
                 Map.of("name", "Galería Unión", "address", "Jr. de la Unión 845, Cercado de Lima", "totalUnits", 10)));
@@ -79,11 +80,11 @@ public class DemoDataLoader {
 
         acceptInvitation(admin, firstTenant, FIRST_TENANT_EMAIL, unitA03);
         acceptInvitation(admin, secondTenant, SECOND_TENANT_EMAIL, unitA05);
-        admin.post("/units/" + unitB07 + "/invite", Map.of("email", PENDING_TENANT_EMAIL));
+        admin.send("/units/" + unitB07 + "/invite", Map.of("email", PENDING_TENANT_EMAIL));
 
         var planId = admin.getList("/subscription-plans").stream()
                 .filter(plan -> "COMMERCIAL".equals(plan.get("code"))).findFirst().map(DemoDataLoader::id).orElseThrow();
-        admin.post("/subscriptions", Map.of("galleryId", galleryId, "monitoredUnitCount", 10, "planId", planId,
+        admin.send("/subscriptions", Map.of("galleryId", galleryId, "monitoredUnitCount", 10, "planId", planId,
                 "billingCycle", "MONTHLY", "paymentMethod", "CREDIT_CARD", "cardNumber", "4111111111111111",
                 "cardExpiry", "12/30"));
 
@@ -105,37 +106,41 @@ public class DemoDataLoader {
         var lastMonth = YearMonth.from(today).minusMonths(1).toString();
         var billA03 = issuedBill(admin, unitA03, lastMonth);
         issuedBill(admin, unitA05, lastMonth);
-        admin.post("/utility-bills", Map.of("unitId", unitB07, "period", lastMonth));
-        firstTenant.post("/billing-disputes", Map.of("utilityBillId", billA03, "reason", "CONSUMPTION_ABOVE_BASELINE",
+        admin.send("/utility-bills", Map.of("unitId", unitB07, "period", lastMonth));
+        firstTenant.send("/billing-disputes", Map.of("utilityBillId", billA03, "reason", "CONSUMPTION_ABOVE_BASELINE",
                 "description", "La luz salió más alta que el mes pasado y el local tuvo el mismo horario."));
 
         admin.send("/tenant-notifications/announcements", Map.of("type", "ANNOUNCEMENT", "wholeGallery", true,
                 "title", "Mantenimiento del sistema eléctrico",
                 "body", "El sábado de 7:00 a 9:00 se cortará la luz en el primer piso por mantenimiento."));
         var conversationId = id(firstTenant.post("/conversations", Map.of("subject", "Fuga de agua en el baño del local")));
-        firstTenant.post("/conversations/" + conversationId + "/messages",
+        firstTenant.send("/conversations/" + conversationId + "/messages",
                 Map.of("content", "Hay una fuga debajo del lavadero desde la mañana.", "attachments", List.of()));
-        admin.post("/conversations/" + conversationId + "/messages",
+        admin.send("/conversations/" + conversationId + "/messages",
                 Map.of("content", "Gracias por avisar. El técnico pasará hoy a las 4:00 p. m.", "attachments", List.of()));
-        admin.post("/conversations", Map.of("tenantId", userId(api, SECOND_TENANT_EMAIL), "subject", "Renovación del contrato"));
+        admin.send("/conversations", Map.of("tenantId", userId(secondTenantSession), "subject", "Renovación del contrato"));
     }
 
-    private static String signUp(DemoApiClient api, String fullName, String email, String role) {
-        api.post("/authentication/sign-up", Map.of("fullName", fullName, "email", email, "password", PASSWORD, "role", role));
-        return signIn(api, email);
+    /** @return the session of the new account: its user and its access token */
+    private static Map<String, Object> signUp(DemoApiClient api, String fullName, String email, String role) {
+        return api.post("/authentication/sign-up", Map.of("fullName", fullName, "email", email, "password", PASSWORD, "role", role));
     }
 
-    private static String signIn(DemoApiClient api, String email) {
+    private static boolean canSignIn(DemoApiClient api, String email) {
         try {
-            return (String) api.post("/authentication/sign-in", Map.of("email", email, "password", PASSWORD)).get("accessToken");
+            api.send("/authentication/sign-in", Map.of("email", email, "password", PASSWORD));
+            return true;
         } catch (HttpClientErrorException exception) {
-            return null;
+            return false;
         }
     }
 
+    private static String accessToken(Map<String, Object> session) {
+        return (String) session.get("accessToken");
+    }
+
     @SuppressWarnings("unchecked")
-    private static Long userId(DemoApiClient api, String email) {
-        var session = api.post("/authentication/sign-in", Map.of("email", email, "password", PASSWORD));
+    private static Long userId(Map<String, Object> session) {
         return id((Map<String, Object>) session.get("user"));
     }
 
@@ -149,7 +154,7 @@ public class DemoDataLoader {
 
     private static void acceptInvitation(DemoApiClient admin, DemoApiClient tenant, String email, Long unitId) {
         var invitation = admin.post("/units/" + unitId + "/invite", Map.of("email", email));
-        tenant.post("/tenant-invitations/accept", Map.of("token", invitation.get("token")));
+        tenant.send("/tenant-invitations/accept", Map.of("token", invitation.get("token")));
     }
 
     private static Long device(DemoApiClient admin, String serialNumber, String type, Long resourceId) {
@@ -201,7 +206,7 @@ public class DemoDataLoader {
             reading.put("recordedAt", recordedAt.toString());
             return reading;
         }).toList();
-        admin.post("/telemetry", Map.of("deviceId", deviceId, "receivedAt", recordedAt.toString(), "measurements", readings));
+        admin.send("/telemetry", Map.of("deviceId", deviceId, "receivedAt", recordedAt.toString(), "measurements", readings));
     }
 
     private static Long issuedBill(DemoApiClient admin, Long unitId, String period) {

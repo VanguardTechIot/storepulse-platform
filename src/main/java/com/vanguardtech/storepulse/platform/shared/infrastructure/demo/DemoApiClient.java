@@ -39,13 +39,13 @@ class DemoApiClient {
         return restClient.post().uri(path).headers(this::authorize).body(body).retrieve().body(OBJECT);
     }
 
-    /** Sends a request whose answer is not needed, such as one that returns a list. */
+    /** Posts a request whose answer is not needed. */
     void send(String path, Object body) {
         restClient.post().uri(path).headers(this::authorize).body(body).retrieve().toBodilessEntity();
     }
 
-    Map<String, Object> patch(String path, Object body) {
-        return restClient.patch().uri(path).headers(this::authorize).body(body).retrieve().body(OBJECT);
+    void patch(String path, Object body) {
+        restClient.patch().uri(path).headers(this::authorize).body(body).retrieve().toBodilessEntity();
     }
 
     List<Map<String, Object>> getList(String path) {
