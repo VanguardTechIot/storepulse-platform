@@ -4,7 +4,7 @@ import java.security.SecureRandom;
 import java.util.regex.Pattern;
 
 /**
- * 6-digit code that confirms a password recovery (US-03). Only its hash is persisted; the plain
+ * 6-digit code that confirms a password recovery. Only its hash is persisted; the plain
  * code exists just long enough to be delivered to the user.
  *
  * @param value the six digits of the code

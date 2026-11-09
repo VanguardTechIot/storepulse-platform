@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-/** Recovery of a forgotten password with a 6-digit code sent by email (US-03). */
+/** Recovery of a forgotten password with a 6-digit code sent by email. */
 @RestController
 @RequestMapping("/password-recoveries")
 @RequiredArgsConstructor

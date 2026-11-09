@@ -3,7 +3,7 @@ package com.vanguardtech.storepulse.platform.iam.domain.model.valueobjects;
 import java.util.regex.Pattern;
 
 /**
- * Minimum password complexity required to register or change a password (US-01, US-03): at least
+ * Minimum password complexity required to register or change a password: at least
  * 8 characters and at least one number. It is the same policy the web application checks while the
  * user types.
  */

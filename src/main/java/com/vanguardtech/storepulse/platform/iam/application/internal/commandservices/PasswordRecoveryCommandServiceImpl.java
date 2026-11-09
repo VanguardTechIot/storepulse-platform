@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 
-/** Implementation of the password recovery use cases (US-03). */
+/** Implementation of the password recovery use cases. */
 @Service
 @RequiredArgsConstructor
 public class PasswordRecoveryCommandServiceImpl implements PasswordRecoveryCommandService {
