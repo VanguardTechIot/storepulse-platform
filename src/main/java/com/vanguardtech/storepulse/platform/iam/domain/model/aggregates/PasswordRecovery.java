@@ -13,7 +13,7 @@ import java.time.Instant;
 
 /**
  * Password recovery process of a user (Aggregate Root): a 6-digit code that is valid for 15 minutes
- * and can be used only once (US-03).
+ * and can be used only once.
  *
  * <p>Only the hash of the code is stored. After {@value #MAX_FAILED_ATTEMPTS} wrong codes the
  * recovery is blocked, so the code cannot be guessed by trying every combination.

@@ -6,7 +6,7 @@ import com.vanguardtech.storepulse.platform.shared.domain.model.events.DomainEve
 import java.time.Instant;
 
 /**
- * A new account was registered (US-01). It carries the full name typed in the registration so
+ * A new account was registered. It carries the full name typed in the registration so
  * Profiles and Preferences can create the profile; Identity and Access Management does not keep it.
  *
  * @param userId     identifier of the new account

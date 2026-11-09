@@ -5,7 +5,7 @@ import com.vanguardtech.storepulse.platform.iam.domain.model.commands.ResetPassw
 
 import java.time.Instant;
 
-/** Use cases of the password recovery (US-03). */
+/** Use cases of the password recovery. */
 public interface PasswordRecoveryCommandService {
 
     /**

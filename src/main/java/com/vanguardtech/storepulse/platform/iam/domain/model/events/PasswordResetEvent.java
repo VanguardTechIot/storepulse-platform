@@ -5,7 +5,7 @@ import com.vanguardtech.storepulse.platform.shared.domain.model.events.DomainEve
 import java.time.Instant;
 
 /**
- * The owner of an account asked to recover the password (US-03).
+ * The owner of an account asked to recover the password.
  *
  * @param userId     identifier of the account
  * @param email      email the recovery code is sent to
