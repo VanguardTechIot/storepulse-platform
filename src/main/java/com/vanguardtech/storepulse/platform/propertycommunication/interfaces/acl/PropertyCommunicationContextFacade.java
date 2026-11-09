@@ -11,7 +11,19 @@ public interface PropertyCommunicationContextFacade {
 
     Optional<Long> fetchActiveTenantIdByUnitId(Long commercialUnitId);
 
+    /** @return the store the tenant occupies now, if any */
+    Optional<Long> fetchActiveUnitIdByTenantId(Long tenantId);
+
     List<ActiveTenantAssignmentSummary> fetchActiveAssignmentsByAdministratorId(Long galleryAdministratorId);
+
+    /**
+     * Units whose data the authenticated user may see: every active unit of the administrator's
+     * gallery, or the store the tenant occupies now.
+     */
+    List<Long> fetchUnitIdsVisibleToAuthenticatedUser();
+
+    /** Monitored resources linked to the units visible to the authenticated user. */
+    List<Long> fetchResourceIdsVisibleToAuthenticatedUser();
 
     /**
      * Sends an in-app notification to a tenant.

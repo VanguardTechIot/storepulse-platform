@@ -2,22 +2,20 @@ package com.vanguardtech.storepulse.platform.propertycommunication.interfaces.re
 
 import com.vanguardtech.storepulse.platform.propertycommunication.application.internal.outboundservices.acl.ExternalIamService;
 import com.vanguardtech.storepulse.platform.propertycommunication.domain.exceptions.PropertyCommunicationError;
-import com.vanguardtech.storepulse.platform.propertycommunication.domain.model.aggregates.TenantNotification;
 import com.vanguardtech.storepulse.platform.propertycommunication.domain.model.commands.MarkNotificationReadCommand;
 import com.vanguardtech.storepulse.platform.propertycommunication.domain.model.commands.RetryNotificationCommand;
-import com.vanguardtech.storepulse.platform.propertycommunication.domain.model.queries.GetNotificationByIdQuery;
+import com.vanguardtech.storepulse.platform.propertycommunication.domain.model.queries.GetActiveAssignmentByTenantIdQuery;
 import com.vanguardtech.storepulse.platform.propertycommunication.domain.model.queries.GetNotificationsByAdministratorIdQuery;
 import com.vanguardtech.storepulse.platform.propertycommunication.domain.model.queries.GetNotificationsByTenantIdQuery;
+import com.vanguardtech.storepulse.platform.propertycommunication.domain.services.TenantAssignmentQueryService;
 import com.vanguardtech.storepulse.platform.propertycommunication.domain.services.TenantNotificationCommandService;
 import com.vanguardtech.storepulse.platform.propertycommunication.domain.services.TenantNotificationQueryService;
 import com.vanguardtech.storepulse.platform.propertycommunication.interfaces.rest.resources.NotifyTenantResource;
 import com.vanguardtech.storepulse.platform.propertycommunication.interfaces.rest.resources.PublishAnnouncementResource;
 import com.vanguardtech.storepulse.platform.propertycommunication.interfaces.rest.resources.TenantNotificationResource;
-import com.vanguardtech.storepulse.platform.propertycommunication.interfaces.rest.resources.UpdateTenantNotificationResource;
 import com.vanguardtech.storepulse.platform.propertycommunication.interfaces.rest.transform.NotifyTenantCommandFromResourceAssembler;
 import com.vanguardtech.storepulse.platform.propertycommunication.interfaces.rest.transform.PublishAnnouncementCommandFromResourceAssembler;
 import com.vanguardtech.storepulse.platform.propertycommunication.interfaces.rest.transform.TenantNotificationResourceFromEntityAssembler;
-import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,35 +32,41 @@ public class TenantNotificationsController {
 
     private final TenantNotificationCommandService notificationCommandService;
     private final TenantNotificationQueryService notificationQueryService;
+    private final TenantAssignmentQueryService assignmentQueryService;
     private final ExternalIamService externalIamService;
 
     public TenantNotificationsController(TenantNotificationCommandService notificationCommandService,
                                          TenantNotificationQueryService notificationQueryService,
+                                         TenantAssignmentQueryService assignmentQueryService,
                                          ExternalIamService externalIamService) {
         this.notificationCommandService = notificationCommandService;
         this.notificationQueryService = notificationQueryService;
+        this.assignmentQueryService = assignmentQueryService;
         this.externalIamService = externalIamService;
     }
 
-    @Operation(summary = "Get the notifications sent by an administrator or received by a tenant, most recent first")
+    @Operation(summary = "Get the notifications sent by the authenticated administrator or received by the "
+            + "authenticated tenant, most recent first")
     @GetMapping
-    public List<TenantNotificationResource> getNotifications(@RequestParam(required = false) Long galleryAdministratorId,
-                                                             @RequestParam(required = false) Long tenantId) {
-        if (galleryAdministratorId == null && tenantId == null)
-            throw new IllegalArgumentException("galleryAdministratorId or tenantId is required");
-        var notifications = galleryAdministratorId != null
-                ? notificationQueryService.handle(new GetNotificationsByAdministratorIdQuery(galleryAdministratorId))
-                : notificationQueryService.handle(new GetNotificationsByTenantIdQuery(tenantId));
+    public List<TenantNotificationResource> getNotificationsOfAuthenticatedUser() {
+        var userId = externalIamService.fetchAuthenticatedUserId();
+        var notifications = externalIamService.isGalleryAdministrator(userId)
+                ? notificationQueryService.handle(new GetNotificationsByAdministratorIdQuery(userId))
+                : notificationQueryService.handle(new GetNotificationsByTenantIdQuery(userId));
         return notifications.stream().map(TenantNotificationResourceFromEntityAssembler::toResourceFromEntity).toList();
     }
 
-    @Operation(summary = "Notify one tenant",
-            description = "Answers 409 invalid_notification_title or invalid_notification_body.")
+    @Operation(summary = "Notify one tenant of the administrator's gallery",
+            description = "Answers 404 tenant_not_found and 409 invalid_notification_title or invalid_notification_body.")
     @PostMapping
     @PreAuthorize("hasRole('GALLERY_ADMINISTRATOR')")
     @ResponseStatus(HttpStatus.CREATED)
     public TenantNotificationResource notifyTenant(@Valid @RequestBody NotifyTenantResource resource) {
-        var command = NotifyTenantCommandFromResourceAssembler.toCommandFromResource(administratorOf(resource.galleryAdministratorId()), resource);
+        var administratorId = externalIamService.fetchAuthenticatedAdministratorId();
+        assignmentQueryService.handle(new GetActiveAssignmentByTenantIdQuery(resource.tenantId()))
+                .filter(assignment -> assignment.getGalleryAdministratorId().equals(administratorId))
+                .orElseThrow(() -> new ResourceNotFoundException(PropertyCommunicationError.TENANT_NOT_FOUND));
+        var command = NotifyTenantCommandFromResourceAssembler.toCommandFromResource(administratorId, resource);
         return TenantNotificationResourceFromEntityAssembler.toResourceFromEntity(notificationCommandService.handle(command));
     }
 
@@ -72,31 +76,27 @@ public class TenantNotificationsController {
     @PreAuthorize("hasRole('GALLERY_ADMINISTRATOR')")
     @ResponseStatus(HttpStatus.CREATED)
     public List<TenantNotificationResource> publishAnnouncement(@Valid @RequestBody PublishAnnouncementResource resource) {
-        var command = PublishAnnouncementCommandFromResourceAssembler.toCommandFromResource(administratorOf(null), resource);
+        var command = PublishAnnouncementCommandFromResourceAssembler.toCommandFromResource(
+                externalIamService.fetchAuthenticatedAdministratorId(), resource);
         return notificationCommandService.handle(command).stream()
                 .map(TenantNotificationResourceFromEntityAssembler::toResourceFromEntity).toList();
     }
 
-    @Operation(summary = "Retry a failed notification (status=PENDING) or mark it as read (read=true)",
-            description = "Answers 409 notification_not_failed.")
-    @PatchMapping("/{notificationId}")
-    public TenantNotificationResource updateNotification(@PathVariable Long notificationId,
-                                                         @RequestBody UpdateTenantNotificationResource resource) {
-        TenantNotification notification = null;
-        if ("PENDING".equalsIgnoreCase(resource.status()))
-            notification = notificationCommandService.handle(new RetryNotificationCommand(notificationId));
-        if (Boolean.TRUE.equals(resource.read()))
-            notification = notificationCommandService.handle(new MarkNotificationReadCommand(notificationId));
-        if (notification == null)
-            notification = notificationQueryService.handle(new GetNotificationByIdQuery(notificationId))
-                    .orElseThrow(() -> new ResourceNotFoundException(PropertyCommunicationError.NOTIFICATION_NOT_FOUND));
-        return TenantNotificationResourceFromEntityAssembler.toResourceFromEntity(notification);
+    @Operation(summary = "Deliver again a failed notification of the administrator",
+            description = "Answers 404 notification_not_found and 409 notification_not_failed.")
+    @PatchMapping("/{notificationId}/retry")
+    @PreAuthorize("hasRole('GALLERY_ADMINISTRATOR')")
+    public TenantNotificationResource retryNotification(@PathVariable Long notificationId) {
+        var command = new RetryNotificationCommand(notificationId, externalIamService.fetchAuthenticatedAdministratorId());
+        return TenantNotificationResourceFromEntityAssembler.toResourceFromEntity(notificationCommandService.handle(command));
     }
 
-    private Long administratorOf(Long requested) {
-        if (requested != null)
-            return requested;
-        return externalIamService.fetchAuthenticatedAdministratorId()
-                .orElseThrow(() -> new BusinessRuleException(PropertyCommunicationError.ADMINISTRATOR_NOT_AUTHENTICATED));
+    @Operation(summary = "Mark a notification of the authenticated tenant as read",
+            description = "Answers 404 notification_not_found.")
+    @PatchMapping("/{notificationId}/read")
+    @PreAuthorize("hasRole('TENANT')")
+    public TenantNotificationResource markNotificationRead(@PathVariable Long notificationId) {
+        var command = new MarkNotificationReadCommand(notificationId, externalIamService.fetchAuthenticatedUserId());
+        return TenantNotificationResourceFromEntityAssembler.toResourceFromEntity(notificationCommandService.handle(command));
     }
 }

@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ConversationsControllerTest {
 
     private static final String MESSAGE_REQUEST =
-            "{\"senderId\":7,\"senderRole\":\"GALLERY_ADMINISTRATOR\",\"content\":\"Mañana va el técnico\",\"attachments\":[]}";
+            "{\"content\":\"Mañana va el técnico\",\"attachments\":[]}";
 
     @TestConfiguration
     @EnableMethodSecurity
@@ -57,12 +57,13 @@ class ConversationsControllerTest {
     @Test
     @WithMockUser(roles = "GALLERY_ADMINISTRATOR")
     void startsAConversationForTheAuthenticatedAdministrator() throws Exception {
-        when(externalIamService.fetchAuthenticatedAdministratorId()).thenReturn(Optional.of(7L));
+        when(externalIamService.fetchAuthenticatedUserId()).thenReturn(7L);
+        when(externalIamService.isGalleryAdministrator(7L)).thenReturn(true);
         when(conversationCommandService.handle(any(StartConversationCommand.class)))
                 .thenReturn(new Conversation(5L, 3L, 7L, "Goteo en el techo"));
 
         mockMvc.perform(post("/api/v1/conversations").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"tenantId\":5,\"commercialUnitId\":3,\"subject\":\"Goteo en el techo\"}"))
+                        .content("{\"tenantId\":5,\"subject\":\"Goteo en el techo\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("OPEN"))
                 .andExpect(jsonPath("$.galleryAdministratorId").value(7));
@@ -88,10 +89,12 @@ class ConversationsControllerTest {
 
     @Test
     @WithMockUser(roles = "TENANT")
-    void answers404ForAnUnknownConversation() throws Exception {
-        when(conversationQueryService.handle(any(GetConversationByIdQuery.class))).thenReturn(Optional.empty());
+    void answers404ForAConversationOfOtherUsers() throws Exception {
+        when(externalIamService.fetchAuthenticatedUserId()).thenReturn(9L);
+        when(conversationQueryService.handle(any(GetConversationByIdQuery.class)))
+                .thenReturn(Optional.of(new Conversation(5L, 3L, 7L, "Goteo en el techo")));
 
-        mockMvc.perform(get("/api/v1/conversations/99"))
+        mockMvc.perform(get("/api/v1/conversations/1"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("conversation_not_found"));
     }

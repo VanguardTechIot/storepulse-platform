@@ -1,7 +1,6 @@
 package com.vanguardtech.storepulse.platform.propertycommunication.interfaces.rest.controllers;
 
 import com.vanguardtech.storepulse.platform.propertycommunication.application.internal.outboundservices.acl.ExternalIamService;
-import com.vanguardtech.storepulse.platform.propertycommunication.domain.exceptions.PropertyCommunicationError;
 import com.vanguardtech.storepulse.platform.propertycommunication.domain.model.queries.GetCommunicationLogsByAdministratorIdQuery;
 import com.vanguardtech.storepulse.platform.propertycommunication.domain.services.CommunicationLogCommandService;
 import com.vanguardtech.storepulse.platform.propertycommunication.domain.services.CommunicationLogQueryService;
@@ -9,7 +8,6 @@ import com.vanguardtech.storepulse.platform.propertycommunication.interfaces.res
 import com.vanguardtech.storepulse.platform.propertycommunication.interfaces.rest.resources.RegisterCommunicationLogResource;
 import com.vanguardtech.storepulse.platform.propertycommunication.interfaces.rest.transform.CommunicationLogResourceFromEntityAssembler;
 import com.vanguardtech.storepulse.platform.propertycommunication.interfaces.rest.transform.RegisterCommunicationLogCommandFromResourceAssembler;
-import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -34,10 +32,12 @@ public class CommunicationLogsController {
         this.externalIamService = externalIamService;
     }
 
-    @Operation(summary = "Get the communication logs of an administrator, most recent first")
+    @Operation(summary = "Get the communication logs of the authenticated administrator, most recent first")
     @GetMapping
-    public List<CommunicationLogResource> getLogsByAdministratorId(@RequestParam Long galleryAdministratorId) {
-        return logQueryService.handle(new GetCommunicationLogsByAdministratorIdQuery(galleryAdministratorId)).stream()
+    @PreAuthorize("hasRole('GALLERY_ADMINISTRATOR')")
+    public List<CommunicationLogResource> getLogsOfAuthenticatedAdministrator() {
+        var administratorId = externalIamService.fetchAuthenticatedAdministratorId();
+        return logQueryService.handle(new GetCommunicationLogsByAdministratorIdQuery(administratorId)).stream()
                 .map(CommunicationLogResourceFromEntityAssembler::toResourceFromEntity).toList();
     }
 
@@ -46,10 +46,8 @@ public class CommunicationLogsController {
     @PreAuthorize("hasRole('GALLERY_ADMINISTRATOR')")
     @ResponseStatus(HttpStatus.CREATED)
     public CommunicationLogResource registerLog(@Valid @RequestBody RegisterCommunicationLogResource resource) {
-        var administratorId = resource.galleryAdministratorId() != null ? resource.galleryAdministratorId()
-                : externalIamService.fetchAuthenticatedAdministratorId()
-                .orElseThrow(() -> new BusinessRuleException(PropertyCommunicationError.ADMINISTRATOR_NOT_AUTHENTICATED));
-        var command = RegisterCommunicationLogCommandFromResourceAssembler.toCommandFromResource(administratorId, resource);
+        var command = RegisterCommunicationLogCommandFromResourceAssembler.toCommandFromResource(
+                externalIamService.fetchAuthenticatedAdministratorId(), resource);
         return CommunicationLogResourceFromEntityAssembler.toResourceFromEntity(logCommandService.handle(command));
     }
 }

@@ -2,7 +2,6 @@ package com.vanguardtech.storepulse.platform.propertycommunication.interfaces.re
 
 import com.vanguardtech.storepulse.platform.propertycommunication.domain.model.commands.SendMessageCommand;
 import com.vanguardtech.storepulse.platform.propertycommunication.domain.model.valueobjects.Attachment;
-import com.vanguardtech.storepulse.platform.propertycommunication.domain.model.valueobjects.SenderRole;
 import com.vanguardtech.storepulse.platform.propertycommunication.interfaces.rest.resources.SendMessageResource;
 import java.util.List;
 
@@ -12,7 +11,6 @@ public class SendMessageCommandFromResourceAssembler {
                 .map(attachment -> new Attachment(attachment.fileName(), attachment.url(), attachment.mimeType(),
                         attachment.sizeBytes()))
                 .toList();
-        return new SendMessageCommand(conversationId, senderId, Enums.parse(SenderRole.class, resource.senderRole()),
-                resource.content(), attachments);
+        return new SendMessageCommand(conversationId, senderId, resource.content(), attachments);
     }
 }
