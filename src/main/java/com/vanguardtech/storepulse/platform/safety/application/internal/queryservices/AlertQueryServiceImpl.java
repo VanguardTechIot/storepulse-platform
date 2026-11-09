@@ -3,7 +3,6 @@ package com.vanguardtech.storepulse.platform.safety.application.internal.queryse
 import com.vanguardtech.storepulse.platform.safety.domain.model.aggregates.Alert;
 import com.vanguardtech.storepulse.platform.safety.domain.model.queries.GetAlertByIdQuery;
 import com.vanguardtech.storepulse.platform.safety.domain.model.queries.GetAlertsByDeviceIdsQuery;
-import com.vanguardtech.storepulse.platform.safety.domain.model.queries.GetAllAlertsQuery;
 import com.vanguardtech.storepulse.platform.safety.domain.services.AlertQueryService;
 import com.vanguardtech.storepulse.platform.safety.infrastructure.persistence.jpa.repositories.AlertRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,11 +16,6 @@ import java.util.Optional;
 public class AlertQueryServiceImpl implements AlertQueryService {
 
     private final AlertRepository alertRepository;
-
-    @Override
-    public List<Alert> handle(GetAllAlertsQuery query) {
-        return alertRepository.findAllByOrderByDetectedAtDesc();
-    }
 
     @Override
     public List<Alert> handle(GetAlertsByDeviceIdsQuery query) {

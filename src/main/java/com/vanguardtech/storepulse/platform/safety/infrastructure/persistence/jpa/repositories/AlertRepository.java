@@ -11,8 +11,6 @@ import java.util.List;
 
 @Repository
 public interface AlertRepository extends JpaRepository<Alert, Long> {
-    List<Alert> findAllByOrderByDetectedAtDesc();
-
     List<Alert> findByDeviceIdInOrderByDetectedAtDesc(Collection<Long> deviceIds);
 
     boolean existsByDeviceIdAndStatusNot(Long deviceId, AlertStatus status);
