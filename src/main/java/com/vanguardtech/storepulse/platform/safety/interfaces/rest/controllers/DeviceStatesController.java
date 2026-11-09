@@ -1,5 +1,6 @@
 package com.vanguardtech.storepulse.platform.safety.interfaces.rest.controllers;
 
+import com.vanguardtech.storepulse.platform.safety.application.internal.outboundservices.acl.ExternalAssetsService;
 import com.vanguardtech.storepulse.platform.safety.domain.model.queries.GetDeviceStateByDeviceIdQuery;
 import com.vanguardtech.storepulse.platform.safety.domain.services.DeviceStateQueryService;
 import com.vanguardtech.storepulse.platform.safety.interfaces.rest.resources.DeviceStateResource;
@@ -22,10 +23,14 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public class DeviceStatesController {
 
     private final DeviceStateQueryService deviceStateQueryService;
+    private final ExternalAssetsService externalAssetsService;
 
-    @Operation(summary = "Get the current state of a device")
+    @Operation(summary = "Get the current state of a device visible to the user",
+            description = "Answers 404 when the device is not installed in a resource visible to the user.")
     @GetMapping
     public ResponseEntity<DeviceStateResource> getDeviceState(@RequestParam Long deviceId) {
+        if (!externalAssetsService.fetchDeviceIdsVisibleToAuthenticatedUser().contains(deviceId))
+            return ResponseEntity.notFound().build();
         return deviceStateQueryService.handle(new GetDeviceStateByDeviceIdQuery(deviceId))
                 .map(DeviceStateResourceFromEntityAssembler::toResourceFromEntity)
                 .map(ResponseEntity::ok)

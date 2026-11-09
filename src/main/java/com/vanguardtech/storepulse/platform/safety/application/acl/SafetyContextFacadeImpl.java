@@ -1,6 +1,7 @@
 package com.vanguardtech.storepulse.platform.safety.application.acl;
 
 import com.vanguardtech.storepulse.platform.safety.domain.model.commands.EvaluateMeasurementCommand;
+import com.vanguardtech.storepulse.platform.safety.domain.model.queries.GetAlertsByDeviceIdsQuery;
 import com.vanguardtech.storepulse.platform.safety.domain.model.queries.GetAllAlertsQuery;
 import com.vanguardtech.storepulse.platform.safety.domain.model.valueobjects.AlertStatus;
 import com.vanguardtech.storepulse.platform.safety.domain.model.valueobjects.SensorType;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -40,6 +42,19 @@ public class SafetyContextFacadeImpl implements SafetyContextFacade {
     @Override
     public Map<String, Long> countOpenAlertsBySensorType() {
         return alertQueryService.handle(new GetAllAlertsQuery()).stream()
+                .filter(alert -> alert.getStatus() != AlertStatus.RESOLVED)
+                .collect(Collectors.groupingBy(alert -> alert.getSensorType().name(), Collectors.counting()));
+    }
+
+    @Override
+    public Map<String, Long> countAlertsByStatus(Collection<Long> deviceIds) {
+        return alertQueryService.handle(new GetAlertsByDeviceIdsQuery(deviceIds)).stream()
+                .collect(Collectors.groupingBy(alert -> alert.getStatus().name(), Collectors.counting()));
+    }
+
+    @Override
+    public Map<String, Long> countOpenAlertsBySensorType(Collection<Long> deviceIds) {
+        return alertQueryService.handle(new GetAlertsByDeviceIdsQuery(deviceIds)).stream()
                 .filter(alert -> alert.getStatus() != AlertStatus.RESOLVED)
                 .collect(Collectors.groupingBy(alert -> alert.getSensorType().name(), Collectors.counting()));
     }

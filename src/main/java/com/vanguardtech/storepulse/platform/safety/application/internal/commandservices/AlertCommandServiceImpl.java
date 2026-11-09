@@ -1,5 +1,6 @@
 package com.vanguardtech.storepulse.platform.safety.application.internal.commandservices;
 
+import com.vanguardtech.storepulse.platform.safety.application.internal.outboundservices.acl.ExternalAssetsService;
 import com.vanguardtech.storepulse.platform.safety.domain.exceptions.SafetyError;
 import com.vanguardtech.storepulse.platform.safety.domain.model.aggregates.Alert;
 import com.vanguardtech.storepulse.platform.safety.domain.model.aggregates.DeviceState;
@@ -30,6 +31,7 @@ public class AlertCommandServiceImpl implements AlertCommandService {
     private final AlertRepository alertRepository;
     private final DeviceStateRepository deviceStateRepository;
     private final SafetyRuleRepository safetyRuleRepository;
+    private final ExternalAssetsService externalAssetsService;
 
     @Override
     @Transactional
@@ -85,8 +87,11 @@ public class AlertCommandServiceImpl implements AlertCommandService {
         return status;
     }
 
+    /** The alert, only when its device is visible to the authenticated user. */
     private Alert findAlert(Long alertId) {
         return alertRepository.findById(alertId)
+                .filter(alert -> externalAssetsService.fetchDeviceIdsVisibleToAuthenticatedUser()
+                        .contains(alert.getDeviceId()))
                 .orElseThrow(() -> new ResourceNotFoundException(SafetyError.ALERT_NOT_FOUND));
     }
 }
