@@ -6,11 +6,14 @@ import com.vanguardtech.storepulse.platform.safety.domain.model.valueobjects.Sen
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
 public interface AlertRepository extends JpaRepository<Alert, Long> {
     List<Alert> findAllByOrderByDetectedAtDesc();
+
+    List<Alert> findByDeviceIdInOrderByDetectedAtDesc(Collection<Long> deviceIds);
 
     boolean existsByDeviceIdAndStatusNot(Long deviceId, AlertStatus status);
 

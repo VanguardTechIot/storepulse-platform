@@ -2,6 +2,7 @@ package com.vanguardtech.storepulse.platform.safety.application.internal.queryse
 
 import com.vanguardtech.storepulse.platform.safety.domain.model.aggregates.Alert;
 import com.vanguardtech.storepulse.platform.safety.domain.model.queries.GetAlertByIdQuery;
+import com.vanguardtech.storepulse.platform.safety.domain.model.queries.GetAlertsByDeviceIdsQuery;
 import com.vanguardtech.storepulse.platform.safety.domain.model.queries.GetAllAlertsQuery;
 import com.vanguardtech.storepulse.platform.safety.domain.services.AlertQueryService;
 import com.vanguardtech.storepulse.platform.safety.infrastructure.persistence.jpa.repositories.AlertRepository;
@@ -20,6 +21,12 @@ public class AlertQueryServiceImpl implements AlertQueryService {
     @Override
     public List<Alert> handle(GetAllAlertsQuery query) {
         return alertRepository.findAllByOrderByDetectedAtDesc();
+    }
+
+    @Override
+    public List<Alert> handle(GetAlertsByDeviceIdsQuery query) {
+        if (query.deviceIds().isEmpty()) return List.of();
+        return alertRepository.findByDeviceIdInOrderByDetectedAtDesc(query.deviceIds());
     }
 
     @Override
