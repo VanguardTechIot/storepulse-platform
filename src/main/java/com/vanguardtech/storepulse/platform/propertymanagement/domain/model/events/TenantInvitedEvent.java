@@ -4,7 +4,7 @@ import com.vanguardtech.storepulse.platform.shared.domain.model.events.DomainEve
 import java.time.Instant;
 
 /**
- * A tenant was invited to occupy a store (US-12). Property Communication uses it to deliver the
+ * A tenant was invited to occupy a store. Property Communication uses it to deliver the
  * invitation link.
  *
  * @param invitationId identifier of the invitation

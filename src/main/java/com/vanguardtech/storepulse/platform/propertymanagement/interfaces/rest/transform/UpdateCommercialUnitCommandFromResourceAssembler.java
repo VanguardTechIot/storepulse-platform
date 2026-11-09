@@ -5,9 +5,11 @@ import com.vanguardtech.storepulse.platform.propertymanagement.domain.model.valu
 import com.vanguardtech.storepulse.platform.propertymanagement.interfaces.rest.resources.UpdateCommercialUnitResource;
 
 public class UpdateCommercialUnitCommandFromResourceAssembler {
-    public static UpdateCommercialUnitCommand toCommandFromResource(Long unitId, UpdateCommercialUnitResource resource) {
-        return new UpdateCommercialUnitCommand(unitId, resource.code(), resource.floor(), resource.areaSquareMeters(),
-                resource.businessName(), parseStatus(resource.status()));
+    public static UpdateCommercialUnitCommand toCommandFromResource(Long unitId, Long administratorId,
+                                                                    UpdateCommercialUnitResource resource) {
+        return new UpdateCommercialUnitCommand(unitId, administratorId, resource.code(), resource.floor(),
+                resource.areaSquareMeters(), resource.businessName(), resource.resourceId(),
+                parseStatus(resource.status()));
     }
 
     private static UnitStatus parseStatus(String status) {

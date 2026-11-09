@@ -46,11 +46,14 @@ public class CommercialUnit extends AuditableAbstractAggregateRoot<CommercialUni
     @Column(length = BUSINESS_NAME_MAX_LENGTH)
     private String businessName;
 
+    /** Resource of Resource and Asset Management whose meters measure the unit; there is no foreign key across contexts. */
+    private Long resourceId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UnitStatus status;
 
-    /** False once the unit is logically removed (US-11). */
+    /** False once the unit is logically removed. */
     @Column(nullable = false)
     private boolean active;
 
@@ -100,11 +103,20 @@ public class CommercialUnit extends AuditableAbstractAggregateRoot<CommercialUni
         return candidate != null && code.trim().equalsIgnoreCase(candidate.trim());
     }
 
-    /** US-10: edits the data; a {@code null} keeps the current value. */
+    /** Edits the data; a {@code null} keeps the current value. */
     public void update(String code, String floor, Double areaSquareMeters, String businessName) {
         applyData(code == null ? this.code : code, floor == null ? this.floor : floor,
                 areaSquareMeters == null ? getAreaSquareMeters() : areaSquareMeters,
                 businessName == null ? this.businessName : businessName);
+    }
+
+    /** Links the monitored resource used to bill the unit's consumption; {@code null} keeps the current one. */
+    public void linkResource(Long resourceId) {
+        if (resourceId == null)
+            return;
+        if (resourceId <= 0)
+            throw new IllegalArgumentException("Resource id must be a positive number");
+        this.resourceId = resourceId;
     }
 
     public void assignTenant() {
@@ -143,7 +155,7 @@ public class CommercialUnit extends AuditableAbstractAggregateRoot<CommercialUni
         }
     }
 
-    /** US-11: logical removal; the unit keeps its history but no longer takes part in the gallery. */
+    /** Logical removal; the unit keeps its history but no longer takes part in the gallery. */
     public void remove() {
         if (isOccupied())
             throw new BusinessRuleException(PropertyManagementError.UNIT_OCCUPIED);

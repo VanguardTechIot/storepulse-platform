@@ -10,7 +10,7 @@ import lombok.Getter;
 import java.time.Instant;
 
 /**
- * Commercial gallery managed by one administrator (Aggregate Root, US-08). StorePulse manages one
+ * Commercial gallery managed by one administrator (Aggregate Root). StorePulse manages one
  * gallery per administrator account; its stores and common areas are {@link CommercialUnit}s.
  */
 @Entity

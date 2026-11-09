@@ -6,7 +6,7 @@ import com.vanguardtech.storepulse.platform.propertymanagement.interfaces.rest.r
 public class CommercialUnitResourceFromEntityAssembler {
     public static CommercialUnitResource toResourceFromEntity(CommercialUnit unit) {
         return new CommercialUnitResource(unit.getId(), unit.getGalleryId(), unit.getType().name(), unit.getCode(),
-                unit.getFloor(), unit.getAreaSquareMeters(), unit.getBusinessName(), unit.getStatus().name(),
+                unit.getFloor(), unit.getAreaSquareMeters(), unit.getBusinessName(), unit.getResourceId(), unit.getStatus().name(),
                 unit.isActive(), unit.getCreatedAt());
     }
 }

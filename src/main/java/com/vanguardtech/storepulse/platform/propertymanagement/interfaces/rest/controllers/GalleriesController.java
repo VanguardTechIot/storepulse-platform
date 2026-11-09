@@ -2,8 +2,8 @@ package com.vanguardtech.storepulse.platform.propertymanagement.interfaces.rest.
 
 import com.vanguardtech.storepulse.platform.propertymanagement.application.internal.outboundservices.acl.ExternalIamService;
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.exceptions.PropertyManagementError;
+import com.vanguardtech.storepulse.platform.propertymanagement.domain.model.aggregates.CommercialGallery;
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.model.queries.GetCommercialGalleryByAdministratorIdQuery;
-import com.vanguardtech.storepulse.platform.propertymanagement.domain.model.queries.GetCommercialGalleryByIdQuery;
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.model.queries.GetCommercialUnitsByGalleryIdQuery;
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.services.CommercialGalleryCommandService;
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.services.CommercialGalleryQueryService;
@@ -19,7 +19,6 @@ import com.vanguardtech.storepulse.platform.propertymanagement.interfaces.rest.t
 import com.vanguardtech.storepulse.platform.propertymanagement.interfaces.rest.transform.RegisterCommercialGalleryCommandFromResourceAssembler;
 import com.vanguardtech.storepulse.platform.propertymanagement.interfaces.rest.transform.RegisterCommercialUnitCommandFromResourceAssembler;
 import com.vanguardtech.storepulse.platform.propertymanagement.interfaces.rest.transform.UpdateCommercialGalleryInfoCommandFromResourceAssembler;
-import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -52,21 +51,24 @@ public class GalleriesController {
         this.externalIamService = externalIamService;
     }
 
-    @Operation(summary = "Get the galleries of an administrator (at most one)")
+    @Operation(summary = "Get the gallery of the authenticated administrator (an empty list when it has none)")
     @GetMapping
-    public List<CommercialGalleryResource> getGalleriesByAdministratorId(@RequestParam Long administratorId) {
+    @PreAuthorize("hasRole('GALLERY_ADMINISTRATOR')")
+    public List<CommercialGalleryResource> getGalleriesOfAuthenticatedAdministrator() {
+        var administratorId = externalIamService.fetchAuthenticatedAdministratorId();
         return galleryQueryService.handle(new GetCommercialGalleryByAdministratorIdQuery(administratorId))
                 .map(CommercialGalleryResourceFromEntityAssembler::toResourceFromEntity)
                 .map(List::of)
                 .orElseGet(List::of);
     }
 
-    @Operation(summary = "Get a gallery by id")
+    @Operation(summary = "Get the administrator's gallery by id",
+            description = "Answers 404 gallery_not_found when the gallery belongs to another administrator.")
     @GetMapping("/{galleryId}")
+    @PreAuthorize("hasRole('GALLERY_ADMINISTRATOR')")
     public CommercialGalleryResource getGalleryById(@PathVariable Long galleryId) {
-        return galleryQueryService.handle(new GetCommercialGalleryByIdQuery(galleryId))
-                .map(CommercialGalleryResourceFromEntityAssembler::toResourceFromEntity)
-                .orElseThrow(() -> new ResourceNotFoundException(PropertyManagementError.GALLERY_NOT_FOUND));
+        return CommercialGalleryResourceFromEntityAssembler.toResourceFromEntity(
+                findGalleryOfAuthenticatedAdministrator(galleryId));
     }
 
     @Operation(summary = "Register the gallery of the authenticated administrator",
@@ -75,37 +77,49 @@ public class GalleriesController {
     @PreAuthorize("hasRole('GALLERY_ADMINISTRATOR')")
     @ResponseStatus(HttpStatus.CREATED)
     public CommercialGalleryResource registerGallery(@Valid @RequestBody RegisterCommercialGalleryResource resource) {
-        var administratorId = externalIamService.fetchAuthenticatedAdministratorId()
-                .orElseThrow(() -> new BusinessRuleException(PropertyManagementError.ADMINISTRATOR_NOT_AUTHENTICATED));
+        var administratorId = externalIamService.fetchAuthenticatedAdministratorId();
         var command = RegisterCommercialGalleryCommandFromResourceAssembler.toCommandFromResource(administratorId, resource);
         return CommercialGalleryResourceFromEntityAssembler.toResourceFromEntity(galleryCommandService.handle(command));
     }
 
-    @Operation(summary = "Update the general data of a gallery")
+    @Operation(summary = "Update the general data of the administrator's gallery",
+            description = "Answers 404 gallery_not_found when the gallery belongs to another administrator.")
     @PutMapping("/{galleryId}")
     @PreAuthorize("hasRole('GALLERY_ADMINISTRATOR')")
     public CommercialGalleryResource updateGallery(@PathVariable Long galleryId,
                                                    @Valid @RequestBody UpdateCommercialGalleryResource resource) {
-        var command = UpdateCommercialGalleryInfoCommandFromResourceAssembler.toCommandFromResource(galleryId, resource);
+        var command = UpdateCommercialGalleryInfoCommandFromResourceAssembler.toCommandFromResource(galleryId,
+                externalIamService.fetchAuthenticatedAdministratorId(), resource);
         return CommercialGalleryResourceFromEntityAssembler.toResourceFromEntity(galleryCommandService.handle(command));
     }
 
-    @Operation(summary = "Get the units of a gallery, removed ones included")
+    @Operation(summary = "Get the units of the administrator's gallery, removed ones included",
+            description = "Answers 404 gallery_not_found when the gallery belongs to another administrator.")
     @GetMapping("/{galleryId}/units")
+    @PreAuthorize("hasRole('GALLERY_ADMINISTRATOR')")
     public List<CommercialUnitResource> getUnitsByGalleryId(@PathVariable Long galleryId) {
+        findGalleryOfAuthenticatedAdministrator(galleryId);
         return unitQueryService.handle(new GetCommercialUnitsByGalleryIdQuery(galleryId)).stream()
                 .map(CommercialUnitResourceFromEntityAssembler::toResourceFromEntity)
                 .toList();
     }
 
     @Operation(summary = "Register a store or a common area in the gallery",
-            description = "Answers 409 duplicated_unit_code or duplicated_common_area_name.")
+            description = "Answers 404 gallery_not_found and 409 duplicated_unit_code or duplicated_common_area_name.")
     @PostMapping("/{galleryId}/units")
     @PreAuthorize("hasRole('GALLERY_ADMINISTRATOR')")
     @ResponseStatus(HttpStatus.CREATED)
     public CommercialUnitResource registerUnit(@PathVariable Long galleryId,
                                                @Valid @RequestBody RegisterCommercialUnitResource resource) {
-        var command = RegisterCommercialUnitCommandFromResourceAssembler.toCommandFromResource(galleryId, resource);
+        var command = RegisterCommercialUnitCommandFromResourceAssembler.toCommandFromResource(galleryId,
+                externalIamService.fetchAuthenticatedAdministratorId(), resource);
         return CommercialUnitResourceFromEntityAssembler.toResourceFromEntity(unitCommandService.handle(command));
+    }
+
+    private CommercialGallery findGalleryOfAuthenticatedAdministrator(Long galleryId) {
+        var administratorId = externalIamService.fetchAuthenticatedAdministratorId();
+        return galleryQueryService.handle(new GetCommercialGalleryByAdministratorIdQuery(administratorId))
+                .filter(gallery -> gallery.getId().equals(galleryId))
+                .orElseThrow(() -> new ResourceNotFoundException(PropertyManagementError.GALLERY_NOT_FOUND));
     }
 }

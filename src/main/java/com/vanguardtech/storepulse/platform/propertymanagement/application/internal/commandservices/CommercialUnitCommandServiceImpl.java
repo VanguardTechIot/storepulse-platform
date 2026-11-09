@@ -29,10 +29,11 @@ public class CommercialUnitCommandServiceImpl implements CommercialUnitCommandSe
     @Override
     @Transactional
     public CommercialUnit handle(RegisterCommercialUnitCommand command) {
-        if (!galleryRepository.existsById(command.galleryId()))
+        if (!galleryRepository.existsByIdAndAdministratorId(command.galleryId(), command.administratorId()))
             throw new ResourceNotFoundException(PropertyManagementError.GALLERY_NOT_FOUND);
         var unit = new CommercialUnit(command.galleryId(), command.type(), command.code(), command.floor(),
                 command.areaSquareMeters(), command.businessName());
+        unit.linkResource(command.resourceId());
         ensureUniqueCode(unit, null);
         return unitRepository.save(unit);
     }
@@ -40,8 +41,9 @@ public class CommercialUnitCommandServiceImpl implements CommercialUnitCommandSe
     @Override
     @Transactional
     public CommercialUnit handle(UpdateCommercialUnitCommand command) {
-        var unit = findUnit(command.unitId());
+        var unit = findUnitOfAdministrator(command.unitId(), command.administratorId());
         unit.update(command.code(), command.floor(), command.areaSquareMeters(), command.businessName());
+        unit.linkResource(command.resourceId());
         ensureUniqueCode(unit, unit.getId());
         if (command.status() != null && command.status() != unit.getStatus())
             unit.changeStatus(command.status());
@@ -51,7 +53,7 @@ public class CommercialUnitCommandServiceImpl implements CommercialUnitCommandSe
     @Override
     @Transactional
     public CommercialUnit handle(RemoveCommercialUnitCommand command) {
-        var unit = findUnit(command.unitId());
+        var unit = findUnitOfAdministrator(command.unitId(), command.administratorId());
         unit.remove();
         return unitRepository.save(unit);
     }
@@ -59,7 +61,8 @@ public class CommercialUnitCommandServiceImpl implements CommercialUnitCommandSe
     @Override
     @Transactional
     public CommercialUnit handle(ChangeUnitOccupancyCommand command) {
-        var unit = findUnit(command.unitId());
+        var unit = unitRepository.findById(command.unitId())
+                .orElseThrow(() -> new ResourceNotFoundException(PropertyManagementError.UNIT_NOT_FOUND));
         if (command.occupied())
             unit.assignTenant();
         else
@@ -67,12 +70,13 @@ public class CommercialUnitCommandServiceImpl implements CommercialUnitCommandSe
         return unitRepository.save(unit);
     }
 
-    private CommercialUnit findUnit(Long unitId) {
-        return unitRepository.findById(unitId)
+    /** A unit of another administrator's gallery is answered as not found. */
+    private CommercialUnit findUnitOfAdministrator(Long unitId, Long administratorId) {
+        return unitRepository.findByIdAndAdministratorId(unitId, administratorId)
                 .orElseThrow(() -> new ResourceNotFoundException(PropertyManagementError.UNIT_NOT_FOUND));
     }
 
-    /** US-09, US-10, US-57: the code of a store or the name of a common area is unique in the gallery. */
+    /** The code of a store or the name of a common area is unique among the active units of the gallery. */
     private void ensureUniqueCode(CommercialUnit unit, Long ownId) {
         var taken = unitRepository.findByGalleryIdAndActiveTrue(unit.getGalleryId()).stream()
                 .anyMatch(other -> !other.getId().equals(ownId) && other.hasCode(unit.getCode()));

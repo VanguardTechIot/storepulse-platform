@@ -10,10 +10,12 @@ import com.vanguardtech.storepulse.platform.propertymanagement.domain.model.quer
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.services.CommercialGalleryQueryService;
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.services.CommercialUnitCommandService;
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.services.CommercialUnitQueryService;
+import com.vanguardtech.storepulse.platform.propertymanagement.infrastructure.persistence.jpa.repositories.CommercialUnitRepository;
 import com.vanguardtech.storepulse.platform.propertymanagement.interfaces.acl.CommercialUnitSummary;
 import com.vanguardtech.storepulse.platform.propertymanagement.interfaces.acl.PropertyManagementContextFacade;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /** Implementation of {@link PropertyManagementContextFacade} over the services of the context. */
@@ -23,13 +25,16 @@ public class PropertyManagementContextFacadeImpl implements PropertyManagementCo
     private final CommercialGalleryQueryService galleryQueryService;
     private final CommercialUnitQueryService unitQueryService;
     private final CommercialUnitCommandService unitCommandService;
+    private final CommercialUnitRepository unitRepository;
 
     public PropertyManagementContextFacadeImpl(CommercialGalleryQueryService galleryQueryService,
                                                CommercialUnitQueryService unitQueryService,
-                                               CommercialUnitCommandService unitCommandService) {
+                                               CommercialUnitCommandService unitCommandService,
+                                               CommercialUnitRepository unitRepository) {
         this.galleryQueryService = galleryQueryService;
         this.unitQueryService = unitQueryService;
         this.unitCommandService = unitCommandService;
+        this.unitRepository = unitRepository;
     }
 
     @Override
@@ -54,6 +59,19 @@ public class PropertyManagementContextFacadeImpl implements PropertyManagementCo
         return unitQueryService.handle(new GetCommercialUnitsByGalleryIdQuery(galleryId)).stream()
                 .filter(CommercialUnit::isActive)
                 .map(this::summarize)
+                .toList();
+    }
+
+    @Override
+    public Optional<Long> fetchResourceIdByUnitId(Long unitId) {
+        return unitQueryService.handle(new GetCommercialUnitByIdQuery(unitId)).map(CommercialUnit::getResourceId);
+    }
+
+    @Override
+    public List<Long> fetchResourceIdsByGalleryId(Long galleryId) {
+        return unitRepository.findByGalleryIdAndActiveTrue(galleryId).stream()
+                .map(CommercialUnit::getResourceId)
+                .filter(Objects::nonNull)
                 .toList();
     }
 

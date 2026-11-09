@@ -1,5 +1,6 @@
 package com.vanguardtech.storepulse.platform.propertymanagement.application.internal.commandservices;
 
+import com.vanguardtech.storepulse.platform.propertymanagement.application.internal.outboundservices.acl.ExternalIamService;
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.exceptions.PropertyManagementError;
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.model.aggregates.TenantInvitation;
 import com.vanguardtech.storepulse.platform.propertymanagement.domain.model.commands.AcceptTenantInvitationCommand;
@@ -19,18 +20,21 @@ public class TenantInvitationCommandServiceImpl implements TenantInvitationComma
 
     private final TenantInvitationRepository invitationRepository;
     private final CommercialUnitRepository unitRepository;
+    private final ExternalIamService externalIamService;
 
     public TenantInvitationCommandServiceImpl(TenantInvitationRepository invitationRepository,
-                                              CommercialUnitRepository unitRepository) {
+                                              CommercialUnitRepository unitRepository,
+                                              ExternalIamService externalIamService) {
         this.invitationRepository = invitationRepository;
         this.unitRepository = unitRepository;
+        this.externalIamService = externalIamService;
     }
 
-    /** US-12: a new invitation replaces any pending one of the same store. */
+    /** A new invitation replaces any pending one of the same store. */
     @Override
     @Transactional
     public TenantInvitation handle(InviteTenantCommand command) {
-        var unit = unitRepository.findById(command.unitId())
+        var unit = unitRepository.findByIdAndAdministratorId(command.unitId(), command.administratorId())
                 .orElseThrow(() -> new ResourceNotFoundException(PropertyManagementError.UNIT_NOT_FOUND));
         invitationRepository.findByUnitIdAndStatus(unit.getId(), InvitationStatus.PENDING)
                 .forEach(previous -> {
@@ -45,26 +49,20 @@ public class TenantInvitationCommandServiceImpl implements TenantInvitationComma
     @Override
     @Transactional
     public TenantInvitation handle(RevokeTenantInvitationCommand command) {
-        var invitation = findInvitation(command.invitationId());
+        var invitation = invitationRepository.findByIdAndAdministratorId(command.invitationId(), command.administratorId())
+                .orElseThrow(() -> new ResourceNotFoundException(PropertyManagementError.INVITATION_NOT_FOUND));
         invitation.revoke();
         return invitationRepository.save(invitation);
     }
 
-    /** The tenant registered with the link: the invitation closes and the store becomes occupied. */
+    /** Property Communication assigns the tenant when the acceptance event is published on save. */
     @Override
     @Transactional
     public TenantInvitation handle(AcceptTenantInvitationCommand command) {
-        var invitation = findInvitation(command.invitationId());
-        invitation.accept(Instant.now());
-        unitRepository.findById(invitation.getUnitId()).ifPresent(unit -> {
-            unit.assignTenant();
-            unitRepository.save(unit);
-        });
-        return invitationRepository.save(invitation);
-    }
-
-    private TenantInvitation findInvitation(Long invitationId) {
-        return invitationRepository.findById(invitationId)
+        var invitation = invitationRepository.findByToken(command.token())
                 .orElseThrow(() -> new ResourceNotFoundException(PropertyManagementError.INVITATION_NOT_FOUND));
+        var tenantEmail = externalIamService.fetchEmailByUserId(command.tenantId()).orElse(null);
+        invitation.accept(command.tenantId(), tenantEmail, Instant.now());
+        return invitationRepository.save(invitation);
     }
 }
