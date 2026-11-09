@@ -17,7 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-/** Registration, sign-in and sign-out of users (US-01, US-02). */
+/** Registration, sign-in and sign-out of users. */
 @RestController
 @RequestMapping("/authentication")
 @RequiredArgsConstructor
@@ -27,8 +27,8 @@ public class AuthenticationController {
     private final UserCommandService userCommandService;
 
     /**
-     * Registers a gallery administrator and starts the session; answers 409 {@code weak_password} or
-     * {@code email_already_registered}.
+     * Registers a gallery administrator, or a tenant with {@code role: TENANT}, and starts the
+     * session; answers 409 {@code weak_password} or {@code email_already_registered}.
      */
     @PostMapping("/sign-up")
     @ResponseStatus(HttpStatus.CREATED)

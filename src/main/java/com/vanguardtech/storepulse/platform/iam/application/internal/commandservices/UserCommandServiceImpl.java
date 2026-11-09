@@ -13,7 +13,6 @@ import com.vanguardtech.storepulse.platform.iam.domain.model.commands.SignUpComm
 import com.vanguardtech.storepulse.platform.iam.domain.model.valueobjects.Email;
 import com.vanguardtech.storepulse.platform.iam.domain.model.valueobjects.PasswordHash;
 import com.vanguardtech.storepulse.platform.iam.domain.model.valueobjects.PasswordPolicy;
-import com.vanguardtech.storepulse.platform.iam.domain.model.valueobjects.Role;
 import com.vanguardtech.storepulse.platform.iam.domain.model.valueobjects.UserSession;
 import com.vanguardtech.storepulse.platform.iam.domain.services.UserCommandService;
 import com.vanguardtech.storepulse.platform.iam.infrastructure.persistence.jpa.repositories.UnauthorizedAccessAttemptRepository;
@@ -37,7 +36,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     private final TokenService tokenService;
 
     /**
-     * Only gallery administrators register themselves (US-01); the account is saved first so the
+     * Registers the account with the role of the command; the account is saved first so the
      * registration event carries its identifier.
      */
     @Override
@@ -49,7 +48,7 @@ public class UserCommandServiceImpl implements UserCommandService {
             throw new BusinessRuleException(IamError.EMAIL_ALREADY_REGISTERED);
 
         var passwordHash = new PasswordHash(passwordHasher.encode(command.password()));
-        var userAccount = userAccountRepository.save(new UserAccount(email, passwordHash, Role.GALLERY_ADMINISTRATOR));
+        var userAccount = userAccountRepository.save(new UserAccount(email, passwordHash, command.role()));
         userAccount.confirmRegistration(command.fullName().trim(), Instant.now());
         userAccount = userAccountRepository.save(userAccount);
         return new UserSession(userAccount, tokenService.generateToken(userAccount));
