@@ -2,7 +2,9 @@ package com.vanguardtech.storepulse.platform.utilitybilling.application.internal
 
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.ResourceNotFoundException;
+import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalIamService;
 import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalMonitoringService;
+import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalPropertyService;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.exceptions.UtilityBillingError;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.aggregates.UtilityBill;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.commands.GenerateUtilityBillCommand;
@@ -30,26 +32,33 @@ public class UtilityBillCommandServiceImpl implements UtilityBillCommandService 
     private final UtilityBillRepository billRepository;
     private final UtilityTariffRepository tariffRepository;
     private final ExternalMonitoringService externalMonitoringService;
+    private final ExternalPropertyService externalPropertyService;
+    private final ExternalIamService externalIamService;
 
     /**
-     * Builds the breakdown from the consumption Monitoring recorded for the month. Utilities
-     * without consumption are left out and lower the data completeness of the bill.
+     * Builds the breakdown from the consumption Monitoring recorded for the month on the resource
+     * linked to the store. Utilities without consumption are left out and lower the data
+     * completeness of the bill.
      */
     @Override
     @Transactional
     public UtilityBill handle(GenerateUtilityBillCommand command) {
         if (command.period() == null)
             throw new BusinessRuleException(UtilityBillingError.INVALID_PERIOD);
+        var unit = externalPropertyService.fetchUnitOfAdministrator(command.unitId(), command.administratorId())
+                .orElseThrow(() -> new ResourceNotFoundException(UtilityBillingError.UNIT_NOT_FOUND));
+        var resourceId = externalPropertyService.fetchResourceIdByUnitId(unit.id())
+                .orElseThrow(() -> new BusinessRuleException(UtilityBillingError.UNIT_NOT_MONITORED));
         var billingPeriod = BillingPeriod.ofMonth(command.period());
         if (billRepository.existsByUnitIdAndBillingPeriod_StartDate(command.unitId(), billingPeriod.startDate()))
             throw new BusinessRuleException(UtilityBillingError.DUPLICATE);
 
         var breakdown = new ArrayList<BillingItem>();
         for (var utilityType : UtilityType.values()) {
-            var summary = externalMonitoringService.fetchConsumption(command.unitId(), utilityType, command.period());
+            var summary = externalMonitoringService.fetchConsumption(resourceId, utilityType, command.period());
             if (summary.isEmpty()) continue;
             var consumption = summary.get().consumption();
-            var baseline = externalMonitoringService.fetchBaseline(command.unitId(), utilityType, command.period())
+            var baseline = externalMonitoringService.fetchBaseline(resourceId, utilityType, command.period())
                     .map(BaselineConsumption::value)
                     .orElse(consumption);
             var tariff = tariffRepository
@@ -62,24 +71,31 @@ public class UtilityBillCommandServiceImpl implements UtilityBillCommandService 
             throw new BusinessRuleException(UtilityBillingError.NO_CONSUMPTION_DATA);
 
         var dataCompleteness = breakdown.size() * UtilityBill.FULL_DATA_COMPLETENESS / UtilityType.values().length;
-        var bill = billRepository.save(new UtilityBill(command.unitId(), command.unitCode(), command.unitName(),
-                command.tenantName(), billingPeriod, breakdown, dataCompleteness));
+        var tenantName = externalPropertyService.fetchActiveTenantIdByUnitId(unit.id())
+                .flatMap(externalIamService::fetchEmailByUserId)
+                .orElse(null);
+        var unitName = unit.businessName() != null ? unit.businessName() : unit.code();
+        var bill = billRepository.save(new UtilityBill(unit.id(), unit.code(), unitName, tenantName, billingPeriod,
+                breakdown, dataCompleteness));
         bill.generate();
         return billRepository.save(bill);
     }
 
     @Override
     public UtilityBill handle(VerifyBillingDataCommand command) {
-        return update(command.utilityBillId(), bill -> bill.verifyData(command.acceptIncompleteData()));
+        return update(command.utilityBillId(), command.administratorId(),
+                bill -> bill.verifyData(command.acceptIncompleteData()));
     }
 
     @Override
     public UtilityBill handle(IssueUtilityBillCommand command) {
-        return update(command.utilityBillId(), bill -> bill.issue(Instant.now()));
+        return update(command.utilityBillId(), command.administratorId(), bill -> bill.issue(Instant.now()));
     }
 
-    private UtilityBill update(Long utilityBillId, Consumer<UtilityBill> change) {
+    /** A bill of another administrator's gallery is answered as not found. */
+    private UtilityBill update(Long utilityBillId, Long administratorId, Consumer<UtilityBill> change) {
         var bill = billRepository.findById(utilityBillId)
+                .filter(found -> externalPropertyService.isUnitOfAdministrator(found.getUnitId(), administratorId))
                 .orElseThrow(() -> new ResourceNotFoundException(UtilityBillingError.NOT_FOUND));
         change.accept(bill);
         return billRepository.save(bill);

@@ -1,7 +1,11 @@
 package com.vanguardtech.storepulse.platform.utilitybilling.application.internal.commandservices;
 
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
+import com.vanguardtech.storepulse.platform.shared.domain.exceptions.ResourceNotFoundException;
+import com.vanguardtech.storepulse.platform.propertymanagement.interfaces.acl.CommercialUnitSummary;
+import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalIamService;
 import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalMonitoringService;
+import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalPropertyService;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.aggregates.UtilityBill;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.aggregates.UtilityTariff;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.commands.GenerateUtilityBillCommand;
@@ -32,7 +36,8 @@ class UtilityBillCommandServiceImplTest {
 
     private static final YearMonth OCTOBER = YearMonth.of(2026, 10);
     private static final GenerateUtilityBillCommand COMMAND =
-            new GenerateUtilityBillCommand(1L, "A-01", "Local A-01", "Tienda Sol", OCTOBER);
+            new GenerateUtilityBillCommand(1L, 7L, OCTOBER);
+    private static final Long RESOURCE_ID = 11L;
 
     @Mock
     private UtilityBillRepository billRepository;
@@ -43,11 +48,35 @@ class UtilityBillCommandServiceImplTest {
     @Mock
     private ExternalMonitoringService externalMonitoringService;
 
+    @Mock
+    private ExternalPropertyService externalPropertyService;
+
+    @Mock
+    private ExternalIamService externalIamService;
+
     @InjectMocks
     private UtilityBillCommandServiceImpl service;
 
+    private void givenAMonitoredStore() {
+        when(externalPropertyService.fetchUnitOfAdministrator(1L, 7L))
+                .thenReturn(Optional.of(new CommercialUnitSummary(1L, 1L, "A-01", "1", "Tienda Sol", true, false, true)));
+        when(externalPropertyService.fetchResourceIdByUnitId(1L)).thenReturn(Optional.of(RESOURCE_ID));
+    }
+
+    @Test
+    void rejectsAStoreOfAnotherAdministratorOrWithoutResource() {
+        when(externalPropertyService.fetchUnitOfAdministrator(1L, 7L)).thenReturn(Optional.empty());
+        assertEquals("unit_not_found", assertThrows(ResourceNotFoundException.class, () -> service.handle(COMMAND)).getMessage());
+
+        when(externalPropertyService.fetchUnitOfAdministrator(1L, 7L))
+                .thenReturn(Optional.of(new CommercialUnitSummary(1L, 1L, "A-01", "1", null, true, true, true)));
+        when(externalPropertyService.fetchResourceIdByUnitId(1L)).thenReturn(Optional.empty());
+        assertEquals("unit_not_monitored", assertThrows(BusinessRuleException.class, () -> service.handle(COMMAND)).getMessage());
+    }
+
     @Test
     void rejectsAMonthWithoutConsumption() {
+        givenAMonitoredStore();
         when(externalMonitoringService.fetchConsumption(any(), any(), any())).thenReturn(Optional.empty());
 
         var error = assertThrows(BusinessRuleException.class, () -> service.handle(COMMAND));
@@ -56,10 +85,11 @@ class UtilityBillCommandServiceImplTest {
 
     @Test
     void billsOnlyTheUtilitiesWithConsumptionAndLowersTheCompleteness() {
-        when(externalMonitoringService.fetchConsumption(1L, UtilityType.ELECTRICITY, OCTOBER))
+        givenAMonitoredStore();
+        when(externalMonitoringService.fetchConsumption(RESOURCE_ID, UtilityType.ELECTRICITY, OCTOBER))
                 .thenReturn(Optional.of(new ConsumptionSummary(UtilityType.ELECTRICITY, new BigDecimal("100"))));
-        when(externalMonitoringService.fetchConsumption(1L, UtilityType.WATER, OCTOBER)).thenReturn(Optional.empty());
-        when(externalMonitoringService.fetchBaseline(1L, UtilityType.ELECTRICITY, OCTOBER)).thenReturn(Optional.empty());
+        when(externalMonitoringService.fetchConsumption(RESOURCE_ID, UtilityType.WATER, OCTOBER)).thenReturn(Optional.empty());
+        when(externalMonitoringService.fetchBaseline(RESOURCE_ID, UtilityType.ELECTRICITY, OCTOBER)).thenReturn(Optional.empty());
         when(tariffRepository.findFirstByUtilityTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(
                 eq(UtilityType.ELECTRICITY), any()))
                 .thenReturn(Optional.of(new UtilityTariff(UtilityType.ELECTRICITY, new BigDecimal("0.78"), LocalDate.EPOCH)));
@@ -72,11 +102,13 @@ class UtilityBillCommandServiceImplTest {
         var bill = service.handle(COMMAND);
 
         assertEquals(50, bill.getDataCompleteness());
+        assertEquals("Tienda Sol", bill.getUnitName());
         assertEquals(new BigDecimal("78.00"), bill.getTotalAmount());
     }
 
     @Test
     void rejectsASecondBillForTheSameMonth() {
+        givenAMonitoredStore();
         when(billRepository.existsByUnitIdAndBillingPeriod_StartDate(1L, OCTOBER.atDay(1))).thenReturn(true);
 
         var error = assertThrows(BusinessRuleException.class, () -> service.handle(COMMAND));

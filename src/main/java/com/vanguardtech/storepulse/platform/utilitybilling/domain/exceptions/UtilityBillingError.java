@@ -7,6 +7,8 @@ package com.vanguardtech.storepulse.platform.utilitybilling.domain.exceptions;
 public enum UtilityBillingError {
     NOT_FOUND,
     UNIT_NOT_FOUND,
+    /** The unit has no monitored resource linked, so its consumption cannot be read. */
+    UNIT_NOT_MONITORED,
     DUPLICATE,
     INVALID_TRANSITION,
     INCOMPLETE_DATA_NOT_ACCEPTED,

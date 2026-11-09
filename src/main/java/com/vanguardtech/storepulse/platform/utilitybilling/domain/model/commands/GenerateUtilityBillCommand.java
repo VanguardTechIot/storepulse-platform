@@ -3,9 +3,8 @@ package com.vanguardtech.storepulse.platform.utilitybilling.domain.model.command
 import java.time.YearMonth;
 
 /**
- * Generates the draft bill of a unit for a month. Until Property Management is available the unit
- * data travels in the command and the bill keeps a copy of it.
+ * Generates the draft bill of a store of the administrator's gallery for a month. The store data
+ * comes from Property Management and the bill keeps a copy of it.
  */
-public record GenerateUtilityBillCommand(Long unitId, String unitCode, String unitName, String tenantName,
-                                         YearMonth period) {
+public record GenerateUtilityBillCommand(Long unitId, Long administratorId, YearMonth period) {
 }

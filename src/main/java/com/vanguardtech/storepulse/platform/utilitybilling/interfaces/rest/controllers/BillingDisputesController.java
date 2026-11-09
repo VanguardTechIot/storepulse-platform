@@ -1,14 +1,18 @@
 package com.vanguardtech.storepulse.platform.utilitybilling.interfaces.rest.controllers;
 
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.ResourceNotFoundException;
+import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalIamService;
+import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalPropertyService;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.exceptions.UtilityBillingError;
+import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.aggregates.UtilityBill;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.commands.ResolveBillingDisputeCommand;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.commands.ReviewBillingDisputeCommand;
-import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.queries.GetAllBillingDisputesQuery;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.queries.GetBillingDisputeByIdQuery;
-import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.queries.GetBillingDisputesByBillIdQuery;
+import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.queries.GetBillingDisputesByBillIdsQuery;
+import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.queries.GetUtilityBillsByUnitIdsQuery;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.services.BillingDisputeCommandService;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.services.BillingDisputeQueryService;
+import com.vanguardtech.storepulse.platform.utilitybilling.domain.services.UtilityBillQueryService;
 import com.vanguardtech.storepulse.platform.utilitybilling.interfaces.rest.resources.BillingDisputeResource;
 import com.vanguardtech.storepulse.platform.utilitybilling.interfaces.rest.resources.RaiseBillingDisputeResource;
 import com.vanguardtech.storepulse.platform.utilitybilling.interfaces.rest.resources.ResolveBillingDisputeResource;
@@ -33,20 +37,27 @@ public class BillingDisputesController {
 
     private final BillingDisputeCommandService billingDisputeCommandService;
     private final BillingDisputeQueryService billingDisputeQueryService;
+    private final UtilityBillQueryService utilityBillQueryService;
+    private final ExternalPropertyService externalPropertyService;
+    private final ExternalIamService externalIamService;
 
-    @Operation(summary = "Get the disputes, optionally only those of a bill")
+    @Operation(summary = "Get the disputes over the bills the authenticated user may see, optionally only those of a bill")
     @GetMapping
     public List<BillingDisputeResource> getBillingDisputes(@RequestParam(required = false) Long utilityBillId) {
-        var disputes = utilityBillId == null
-                ? billingDisputeQueryService.handle(new GetAllBillingDisputesQuery())
-                : billingDisputeQueryService.handle(new GetBillingDisputesByBillIdQuery(utilityBillId));
-        return disputes.stream().map(BillingDisputeResourceFromEntityAssembler::toResourceFromEntity).toList();
+        var billIds = visibleBillIds().stream()
+                .filter(visible -> utilityBillId == null || visible.equals(utilityBillId))
+                .toList();
+        if (billIds.isEmpty())
+            return List.of();
+        return billingDisputeQueryService.handle(new GetBillingDisputesByBillIdsQuery(billIds)).stream().map(BillingDisputeResourceFromEntityAssembler::toResourceFromEntity).toList();
     }
 
-    @Operation(summary = "Get a dispute")
+    @Operation(summary = "Get a dispute over a bill the authenticated user may see")
     @GetMapping("/{billingDisputeId}")
     public BillingDisputeResource getBillingDisputeById(@PathVariable Long billingDisputeId) {
+        var billIds = visibleBillIds();
         return billingDisputeQueryService.handle(new GetBillingDisputeByIdQuery(billingDisputeId))
+                .filter(dispute -> billIds.contains(dispute.getUtilityBillId()))
                 .map(BillingDisputeResourceFromEntityAssembler::toResourceFromEntity)
                 .orElseThrow(() -> new ResourceNotFoundException(UtilityBillingError.NOT_FOUND));
     }
@@ -66,7 +77,8 @@ public class BillingDisputesController {
     public BillingDisputeResource reviewBillingDispute(@PathVariable Long billingDisputeId,
                                                        @Valid @RequestBody ReviewBillingDisputeResource resource) {
         return BillingDisputeResourceFromEntityAssembler.toResourceFromEntity(billingDisputeCommandService.handle(
-                new ReviewBillingDisputeCommand(billingDisputeId, resource.reviewNotes())));
+                new ReviewBillingDisputeCommand(billingDisputeId, externalIamService.fetchAuthenticatedAdministratorId(),
+                        resource.reviewNotes())));
     }
 
     @Operation(summary = "Resolve a dispute; the bill is resolved once none of its disputes remains open")
@@ -75,6 +87,16 @@ public class BillingDisputesController {
     public BillingDisputeResource resolveBillingDispute(@PathVariable Long billingDisputeId,
                                                         @Valid @RequestBody ResolveBillingDisputeResource resource) {
         return BillingDisputeResourceFromEntityAssembler.toResourceFromEntity(billingDisputeCommandService.handle(
-                new ResolveBillingDisputeCommand(billingDisputeId, resource.resolution())));
+                new ResolveBillingDisputeCommand(billingDisputeId, externalIamService.fetchAuthenticatedAdministratorId(),
+                        resource.resolution())));
+    }
+
+    private List<Long> visibleBillIds() {
+        var unitIds = externalPropertyService.fetchUnitIdsVisibleToAuthenticatedUser();
+        if (unitIds.isEmpty())
+            return List.of();
+        return utilityBillQueryService.handle(new GetUtilityBillsByUnitIdsQuery(unitIds)).stream()
+                .map(UtilityBill::getId)
+                .toList();
     }
 }

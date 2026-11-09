@@ -3,6 +3,7 @@ package com.vanguardtech.storepulse.platform.utilitybilling.application.internal
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.ResourceNotFoundException;
 import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalIamService;
+import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalPropertyService;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.exceptions.UtilityBillingError;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.aggregates.BillingDispute;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.commands.RaiseBillingDisputeCommand;
@@ -25,14 +26,19 @@ public class BillingDisputeCommandServiceImpl implements BillingDisputeCommandSe
     private final BillingDisputeRepository disputeRepository;
     private final UtilityBillRepository billRepository;
     private final ExternalIamService externalIamService;
+    private final ExternalPropertyService externalPropertyService;
 
-    /** Registers the dispute and puts its bill in dispute, so only an issued bill can be disputed. */
+    /**
+     * Registers the dispute and puts its bill in dispute, so only an issued bill can be disputed.
+     * The tenant must occupy the billed store.
+     */
     @Override
     @Transactional
     public BillingDispute handle(RaiseBillingDisputeCommand command) {
         var tenantId = externalIamService.fetchAuthenticatedUserId()
                 .orElseThrow(() -> new BusinessRuleException(UtilityBillingError.TENANT_REQUIRED));
         var bill = billRepository.findById(command.utilityBillId())
+                .filter(found -> externalPropertyService.isUnitOfTenant(found.getUnitId(), tenantId))
                 .orElseThrow(() -> new ResourceNotFoundException(UtilityBillingError.NOT_FOUND));
         bill.markInDispute();
         billRepository.save(bill);
@@ -44,7 +50,7 @@ public class BillingDisputeCommandServiceImpl implements BillingDisputeCommandSe
 
     @Override
     public BillingDispute handle(ReviewBillingDisputeCommand command) {
-        var dispute = findDispute(command.disputeId());
+        var dispute = findDisputeOfAdministrator(command.disputeId(), command.administratorId());
         dispute.review(command.reviewNotes());
         return disputeRepository.save(dispute);
     }
@@ -53,7 +59,7 @@ public class BillingDisputeCommandServiceImpl implements BillingDisputeCommandSe
     @Override
     @Transactional
     public BillingDispute handle(ResolveBillingDisputeCommand command) {
-        var dispute = findDispute(command.disputeId());
+        var dispute = findDisputeOfAdministrator(command.disputeId(), command.administratorId());
         dispute.resolve(command.resolution(), Instant.now());
         var saved = disputeRepository.save(dispute);
         var stillOpen = disputeRepository.existsByUtilityBillIdAndStatusNot(
@@ -67,8 +73,12 @@ public class BillingDisputeCommandServiceImpl implements BillingDisputeCommandSe
         return saved;
     }
 
-    private BillingDispute findDispute(Long disputeId) {
+    /** A dispute over a bill of another administrator's gallery is answered as not found. */
+    private BillingDispute findDisputeOfAdministrator(Long disputeId, Long administratorId) {
         return disputeRepository.findById(disputeId)
+                .filter(dispute -> billRepository.findById(dispute.getUtilityBillId())
+                        .map(bill -> externalPropertyService.isUnitOfAdministrator(bill.getUnitId(), administratorId))
+                        .orElse(false))
                 .orElseThrow(() -> new ResourceNotFoundException(UtilityBillingError.NOT_FOUND));
     }
 }
