@@ -2,7 +2,6 @@ package com.vanguardtech.storepulse.platform.safety.application.acl;
 
 import com.vanguardtech.storepulse.platform.safety.domain.model.commands.EvaluateMeasurementCommand;
 import com.vanguardtech.storepulse.platform.safety.domain.model.queries.GetAlertsByDeviceIdsQuery;
-import com.vanguardtech.storepulse.platform.safety.domain.model.queries.GetAllAlertsQuery;
 import com.vanguardtech.storepulse.platform.safety.domain.model.valueobjects.AlertStatus;
 import com.vanguardtech.storepulse.platform.safety.domain.model.valueobjects.SensorType;
 import com.vanguardtech.storepulse.platform.safety.domain.services.AlertCommandService;
@@ -31,19 +30,6 @@ public class SafetyContextFacadeImpl implements SafetyContextFacade {
                 deviceId, measurementId, SensorType.valueOf(measurementType), value, recordedAt));
         return new SafetyEvaluation(
                 assessment.deviceStatus().name(), assessment.response().name(), assessment.alertTriggered());
-    }
-
-    @Override
-    public Map<String, Long> countAlertsByStatus() {
-        return alertQueryService.handle(new GetAllAlertsQuery()).stream()
-                .collect(Collectors.groupingBy(alert -> alert.getStatus().name(), Collectors.counting()));
-    }
-
-    @Override
-    public Map<String, Long> countOpenAlertsBySensorType() {
-        return alertQueryService.handle(new GetAllAlertsQuery()).stream()
-                .filter(alert -> alert.getStatus() != AlertStatus.RESOLVED)
-                .collect(Collectors.groupingBy(alert -> alert.getSensorType().name(), Collectors.counting()));
     }
 
     @Override

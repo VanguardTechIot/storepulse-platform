@@ -4,6 +4,8 @@ import com.vanguardtech.storepulse.platform.dashboardanalytics.domain.model.valu
 import com.vanguardtech.storepulse.platform.safety.interfaces.acl.SafetyContextFacade;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
+
 /** Reads from Safety how many alerts there are, without touching its model. */
 @Service("analyticsExternalSafetyService")
 public class ExternalSafetyService {
@@ -14,9 +16,9 @@ public class ExternalSafetyService {
         this.safetyContextFacade = safetyContextFacade;
     }
 
-    public AlertsSummary fetchAlertsSummary() {
-        var byStatus = safetyContextFacade.countAlertsByStatus();
+    public AlertsSummary fetchAlertsSummary(Collection<Long> deviceIds) {
+        var byStatus = safetyContextFacade.countAlertsByStatus(deviceIds);
         return new AlertsSummary(byStatus.getOrDefault("ACTIVE", 0L), byStatus.getOrDefault("ACKNOWLEDGED", 0L),
-                byStatus.getOrDefault("RESOLVED", 0L), safetyContextFacade.countOpenAlertsBySensorType());
+                byStatus.getOrDefault("RESOLVED", 0L), safetyContextFacade.countOpenAlertsBySensorType(deviceIds));
     }
 }

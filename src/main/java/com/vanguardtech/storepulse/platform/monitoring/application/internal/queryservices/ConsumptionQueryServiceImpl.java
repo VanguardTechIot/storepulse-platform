@@ -1,7 +1,6 @@
 package com.vanguardtech.storepulse.platform.monitoring.application.internal.queryservices;
 
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.aggregates.Consumption;
-import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetAllConsumptionQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetConsumptionByResourceIdQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetConsumptionByResourceIdsQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.services.ConsumptionQueryService;
@@ -19,11 +18,6 @@ public class ConsumptionQueryServiceImpl implements ConsumptionQueryService {
 
     public ConsumptionQueryServiceImpl(ConsumptionRepository consumptionRepository) {
         this.consumptionRepository = consumptionRepository;
-    }
-
-    @Override
-    public List<Consumption> handle(GetAllConsumptionQuery query) {
-        return consumptionRepository.findAllByOrderByPeriodStartAsc();
     }
 
     @Override

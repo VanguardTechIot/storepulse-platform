@@ -1,7 +1,6 @@
 package com.vanguardtech.storepulse.platform.monitoring.application.acl;
 
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.aggregates.Consumption;
-import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetAllConsumptionQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetConsumptionByResourceIdQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetConsumptionByResourceIdsQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.valueobjects.MeasurementType;
@@ -20,17 +19,6 @@ public class MonitoringContextFacadeImpl implements MonitoringContextFacade {
 
     public MonitoringContextFacadeImpl(ConsumptionQueryService consumptionQueryService) {
         this.consumptionQueryService = consumptionQueryService;
-    }
-
-    @Override
-    public Double fetchCurrentMonthConsumption(String measurementType) {
-        var type = MeasurementType.valueOf(measurementType);
-        var currentPeriod = Consumption.startOf(Consumption.periodOf(Instant.now()));
-        return consumptionQueryService.handle(new GetAllConsumptionQuery()).stream()
-                .filter(consumption -> consumption.getMeasurementType() == type
-                        && consumption.getPeriodStart().equals(currentPeriod))
-                .mapToDouble(Consumption::getTotalValue)
-                .sum();
     }
 
     @Override

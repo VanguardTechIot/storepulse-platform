@@ -5,9 +5,6 @@ import java.util.Collection;
 
 public interface MonitoringContextFacade {
 
-    /** @return the consumption of every resource in the current month, for ELECTRICITY or WATER */
-    Double fetchCurrentMonthConsumption(String measurementType);
-
     /** @return the consumption of the resources in the current month, for ELECTRICITY or WATER */
     Double fetchCurrentMonthConsumption(Collection<Long> resourceIds, String measurementType);
 
