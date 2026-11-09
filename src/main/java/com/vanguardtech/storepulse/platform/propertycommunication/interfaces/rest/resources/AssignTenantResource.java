@@ -2,5 +2,6 @@ package com.vanguardtech.storepulse.platform.propertycommunication.interfaces.re
 
 import jakarta.validation.constraints.NotNull;
 
-public record AssignTenantResource(@NotNull Long tenantId, @NotNull Long commercialUnitId, Long galleryAdministratorId) {
+/** The administrator is the authenticated user. */
+public record AssignTenantResource(@NotNull Long tenantId, @NotNull Long commercialUnitId) {
 }

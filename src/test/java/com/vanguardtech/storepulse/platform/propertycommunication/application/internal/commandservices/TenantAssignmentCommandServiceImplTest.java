@@ -46,6 +46,7 @@ class TenantAssignmentCommandServiceImplTest {
         when(externalIamService.existsUser(5L)).thenReturn(true);
         when(externalPropertyManagementService.fetchUnit(3L)).thenReturn(Optional.of(FREE_STORE));
         when(assignmentRepository.findByCommercialUnitIdAndStatus(3L, AssignmentStatus.ACTIVE)).thenReturn(Optional.empty());
+        when(externalPropertyManagementService.belongsToAdministrator(1L, 7L)).thenReturn(true);
         when(assignmentRepository.save(any(TenantAssignment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var assignment = service.handle(new AssignTenantCommand(5L, 3L, 7L));
@@ -69,11 +70,25 @@ class TenantAssignmentCommandServiceImplTest {
     }
 
     @Test
+    void refusesAStoreOfAnotherAdministrator() {
+        when(externalIamService.existsUser(5L)).thenReturn(true);
+        when(externalPropertyManagementService.fetchUnit(3L)).thenReturn(Optional.of(FREE_STORE));
+        when(assignmentRepository.findByCommercialUnitIdAndStatus(3L, AssignmentStatus.ACTIVE)).thenReturn(Optional.empty());
+        when(externalPropertyManagementService.belongsToAdministrator(1L, 8L)).thenReturn(false);
+
+        var error = assertThrows(ResourceNotFoundException.class, () -> service.handle(new AssignTenantCommand(5L, 3L, 8L)));
+
+        assertEquals("unit_not_found", error.getMessage());
+        verify(externalPropertyManagementService, never()).markUnitOccupied(any());
+    }
+
+    @Test
     void refusesACommonAreaAndAnUnknownTenant() {
         when(externalIamService.existsUser(5L)).thenReturn(true);
         when(externalPropertyManagementService.fetchUnit(4L))
                 .thenReturn(Optional.of(new CommercialUnitSummary(4L, 1L, "Pasillo", "1", null, false, true, true)));
         when(assignmentRepository.findByCommercialUnitIdAndStatus(4L, AssignmentStatus.ACTIVE)).thenReturn(Optional.empty());
+        when(externalPropertyManagementService.belongsToAdministrator(1L, 7L)).thenReturn(true);
         assertEquals("unit_not_available",
                 assertThrows(BusinessRuleException.class, () -> service.handle(new AssignTenantCommand(5L, 4L, 7L))).getMessage());
 
@@ -88,12 +103,14 @@ class TenantAssignmentCommandServiceImplTest {
         when(assignmentRepository.findById(1L)).thenReturn(Optional.of(assignment));
         when(assignmentRepository.save(any(TenantAssignment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var terminated = service.handle(new TerminateTenantAssignmentCommand(1L));
+        assertEquals("assignment_not_found",
+                assertThrows(ResourceNotFoundException.class, () -> service.handle(new TerminateTenantAssignmentCommand(1L, 8L))).getMessage());
+        var terminated = service.handle(new TerminateTenantAssignmentCommand(1L, 7L));
 
         assertFalse(terminated.isActive());
         assertNotNull(terminated.getTerminatedAt());
         verify(externalPropertyManagementService).markUnitAvailable(3L);
         assertEquals("assignment_not_active",
-                assertThrows(BusinessRuleException.class, () -> service.handle(new TerminateTenantAssignmentCommand(1L))).getMessage());
+                assertThrows(BusinessRuleException.class, () -> service.handle(new TerminateTenantAssignmentCommand(1L, 7L))).getMessage());
     }
 }

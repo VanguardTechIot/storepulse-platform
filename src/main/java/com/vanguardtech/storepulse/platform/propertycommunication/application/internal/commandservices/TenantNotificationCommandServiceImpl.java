@@ -52,7 +52,7 @@ public class TenantNotificationCommandServiceImpl implements TenantNotificationC
         return deliver(notification);
     }
 
-    /** US-34, US-35: one notification per tenant currently assigned to the chosen stores. */
+    /** One notification per tenant currently assigned to the chosen stores. */
     @Override
     @Transactional
     public List<TenantNotification> handle(PublishAnnouncementCommand command) {
@@ -75,7 +75,9 @@ public class TenantNotificationCommandServiceImpl implements TenantNotificationC
     @Override
     @Transactional
     public TenantNotification handle(RetryNotificationCommand command) {
-        var notification = findNotification(command.notificationId());
+        var notification = notificationRepository.findById(command.notificationId())
+                .filter(found -> found.getGalleryAdministratorId().equals(command.administratorId()))
+                .orElseThrow(() -> new ResourceNotFoundException(PropertyCommunicationError.NOTIFICATION_NOT_FOUND));
         notification.retry();
         return deliver(notificationRepository.save(notification));
     }
@@ -83,7 +85,9 @@ public class TenantNotificationCommandServiceImpl implements TenantNotificationC
     @Override
     @Transactional
     public TenantNotification handle(MarkNotificationReadCommand command) {
-        var notification = findNotification(command.notificationId());
+        var notification = notificationRepository.findById(command.notificationId())
+                .filter(found -> found.getTenantId().equals(command.tenantId()))
+                .orElseThrow(() -> new ResourceNotFoundException(PropertyCommunicationError.NOTIFICATION_NOT_FOUND));
         notification.markRead();
         return notificationRepository.save(notification);
     }
@@ -99,10 +103,5 @@ public class TenantNotificationCommandServiceImpl implements TenantNotificationC
                 delivered ? CommunicationAction.NOTIFICATION_SENT : CommunicationAction.NOTIFICATION_FAILED,
                 saved.getTenantId(), saved.getGalleryAdministratorId(), saved.getChannel(), saved.getTitle()));
         return saved;
-    }
-
-    private TenantNotification findNotification(Long notificationId) {
-        return notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new ResourceNotFoundException(PropertyCommunicationError.NOTIFICATION_NOT_FOUND));
     }
 }

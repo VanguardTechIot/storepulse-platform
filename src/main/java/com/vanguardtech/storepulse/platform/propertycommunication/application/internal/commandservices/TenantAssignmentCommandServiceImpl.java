@@ -36,7 +36,10 @@ public class TenantAssignmentCommandServiceImpl implements TenantAssignmentComma
         this.notificationCommandService = notificationCommandService;
     }
 
-    /** A store holds one active tenant; Property Management marks it occupied in the same transaction. */
+    /**
+     * A store of the administrator's gallery holds one active tenant; Property Management marks it
+     * occupied in the same transaction.
+     */
     @Override
     @Transactional
     public TenantAssignment handle(AssignTenantCommand command) {
@@ -46,6 +49,8 @@ public class TenantAssignmentCommandServiceImpl implements TenantAssignmentComma
                 .orElseThrow(() -> new ResourceNotFoundException(PropertyCommunicationError.UNIT_NOT_FOUND));
         if (assignmentRepository.findByCommercialUnitIdAndStatus(unit.id(), AssignmentStatus.ACTIVE).isPresent())
             throw new BusinessRuleException(PropertyCommunicationError.UNIT_ALREADY_ASSIGNED);
+        if (!externalPropertyManagementService.belongsToAdministrator(unit.galleryId(), command.galleryAdministratorId()))
+            throw new ResourceNotFoundException(PropertyCommunicationError.UNIT_NOT_FOUND);
         if (!unit.store() || !unit.available() || !unit.active())
             throw new BusinessRuleException(PropertyCommunicationError.UNIT_NOT_AVAILABLE);
 
@@ -65,6 +70,7 @@ public class TenantAssignmentCommandServiceImpl implements TenantAssignmentComma
     @Transactional
     public TenantAssignment handle(TerminateTenantAssignmentCommand command) {
         var assignment = assignmentRepository.findById(command.assignmentId())
+                .filter(found -> found.getGalleryAdministratorId().equals(command.administratorId()))
                 .orElseThrow(() -> new ResourceNotFoundException(PropertyCommunicationError.ASSIGNMENT_NOT_FOUND));
         assignment.terminate();
         var saved = assignmentRepository.save(assignment);
