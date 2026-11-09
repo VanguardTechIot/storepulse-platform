@@ -1,8 +1,7 @@
 package com.vanguardtech.storepulse.platform.monitoring.application.internal.queryservices;
 
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.aggregates.Telemetry;
-import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetAllTelemetryQuery;
-import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetTelemetryByDeviceIdQuery;
+import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetTelemetryByDeviceIdsQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetTelemetryByIdQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.services.TelemetryQueryService;
 import com.vanguardtech.storepulse.platform.monitoring.infrastructure.persistence.jpa.repositories.TelemetryRepository;
@@ -23,13 +22,9 @@ public class TelemetryQueryServiceImpl implements TelemetryQueryService {
     }
 
     @Override
-    public List<Telemetry> handle(GetAllTelemetryQuery query) {
-        return telemetryRepository.findAllByOrderByReceivedAtDesc();
-    }
-
-    @Override
-    public List<Telemetry> handle(GetTelemetryByDeviceIdQuery query) {
-        return telemetryRepository.findByDeviceIdOrderByReceivedAtDesc(query.deviceId());
+    public List<Telemetry> handle(GetTelemetryByDeviceIdsQuery query) {
+        if (query.deviceIds().isEmpty()) return List.of();
+        return telemetryRepository.findByDeviceIdInOrderByReceivedAtDesc(query.deviceIds());
     }
 
     @Override

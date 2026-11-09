@@ -1,5 +1,6 @@
 package com.vanguardtech.storepulse.platform.monitoring.interfaces.rest.controllers;
 
+import com.vanguardtech.storepulse.platform.monitoring.application.internal.outboundservices.acl.ExternalResourceAssetService;
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetSensorStatusByDeviceIdQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.services.SensorStatusQueryService;
 import com.vanguardtech.storepulse.platform.monitoring.interfaces.rest.resources.SensorStatusResource;
@@ -22,16 +23,20 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public class SensorStatusController {
 
     private final SensorStatusQueryService sensorStatusQueryService;
+    private final ExternalResourceAssetService externalResourceAssetService;
 
-    public SensorStatusController(SensorStatusQueryService sensorStatusQueryService) {
+    public SensorStatusController(SensorStatusQueryService sensorStatusQueryService,
+                                  ExternalResourceAssetService externalResourceAssetService) {
         this.sensorStatusQueryService = sensorStatusQueryService;
+        this.externalResourceAssetService = externalResourceAssetService;
     }
 
-    @Operation(summary = "Get the latest reading of each sensor of a device")
+    @Operation(summary = "Get the latest reading of each sensor of a device visible to the user",
+            description = "Answers 404 when the device is not installed in a resource visible to the user.")
     @GetMapping("/status")
     public ResponseEntity<List<SensorStatusResource>> getSensorStatus(@RequestParam Long deviceId) {
-        var statuses = sensorStatusQueryService.handle(new GetSensorStatusByDeviceIdQuery(deviceId));
-        return ResponseEntity.ok(statuses.stream()
+        if (!externalResourceAssetService.fetchDeviceIdsVisibleToAuthenticatedUser().contains(deviceId)) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(sensorStatusQueryService.handle(new GetSensorStatusByDeviceIdQuery(deviceId)).stream()
                 .map(SensorStatusResourceFromEntityAssembler::toResourceFromEntity)
                 .toList());
     }
