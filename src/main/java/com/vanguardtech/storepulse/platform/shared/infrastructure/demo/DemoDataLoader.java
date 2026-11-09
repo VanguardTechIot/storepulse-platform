@@ -47,7 +47,7 @@ public class DemoDataLoader {
                 || context.getWebServer() == null) return;
         var api = new DemoApiClient("http://localhost:" + context.getWebServer().getPort() + ApiConfiguration.API_PREFIX);
         try {
-            if (canSignIn(api, ADMINISTRATOR_EMAIL)) return;
+            if (isLoaded(api)) return;
             load(api);
             log.info("Demo data ready: sign in as {} or {} with the password {}", ADMINISTRATOR_EMAIL,
                     FIRST_TENANT_EMAIL, PASSWORD);
@@ -126,9 +126,10 @@ public class DemoDataLoader {
         return api.post("/authentication/sign-up", Map.of("fullName", fullName, "email", email, "password", PASSWORD, "role", role));
     }
 
-    private static boolean canSignIn(DemoApiClient api, String email) {
+    /** @return whether the demo administrator can already sign in, that is, the demo gallery exists */
+    private static boolean isLoaded(DemoApiClient api) {
         try {
-            api.send("/authentication/sign-in", Map.of("email", email, "password", PASSWORD));
+            api.send("/authentication/sign-in", Map.of("email", ADMINISTRATOR_EMAIL, "password", PASSWORD));
             return true;
         } catch (HttpClientErrorException exception) {
             return false;
