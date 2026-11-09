@@ -1,8 +1,9 @@
 package com.vanguardtech.storepulse.platform.safety.interfaces.rest.controllers;
 
+import com.vanguardtech.storepulse.platform.safety.application.internal.outboundservices.acl.ExternalAssetsService;
 import com.vanguardtech.storepulse.platform.safety.domain.model.commands.AcknowledgeAlertCommand;
 import com.vanguardtech.storepulse.platform.safety.domain.model.queries.GetAlertByIdQuery;
-import com.vanguardtech.storepulse.platform.safety.domain.model.queries.GetAllAlertsQuery;
+import com.vanguardtech.storepulse.platform.safety.domain.model.queries.GetAlertsByDeviceIdsQuery;
 import com.vanguardtech.storepulse.platform.safety.domain.services.AlertCommandService;
 import com.vanguardtech.storepulse.platform.safety.domain.services.AlertQueryService;
 import com.vanguardtech.storepulse.platform.safety.interfaces.rest.resources.AlertResource;
@@ -29,25 +30,31 @@ public class AlertsController {
 
     private final AlertCommandService alertCommandService;
     private final AlertQueryService alertQueryService;
+    private final ExternalAssetsService externalAssetsService;
 
-    @Operation(summary = "Get all alerts, most recent first")
+    @Operation(summary = "Get the alerts of the devices visible to the user, most recent first",
+            description = "The administrator sees the alerts of the gallery and the tenant the ones of the store.")
     @GetMapping
     public ResponseEntity<List<AlertResource>> getAlerts() {
-        return ResponseEntity.ok(alertQueryService.handle(new GetAllAlertsQuery()).stream()
+        var deviceIds = externalAssetsService.fetchDeviceIdsVisibleToAuthenticatedUser();
+        return ResponseEntity.ok(alertQueryService.handle(new GetAlertsByDeviceIdsQuery(deviceIds)).stream()
                 .map(AlertResourceFromEntityAssembler::toResourceFromEntity)
                 .toList());
     }
 
-    @Operation(summary = "Get an alert by ID")
+    @Operation(summary = "Get an alert by ID", description = "Answers 404 when its device is not visible to the user.")
     @GetMapping("/{alertId}")
     public ResponseEntity<AlertResource> getAlertById(@PathVariable Long alertId) {
+        var deviceIds = externalAssetsService.fetchDeviceIdsVisibleToAuthenticatedUser();
         return alertQueryService.handle(new GetAlertByIdQuery(alertId))
+                .filter(alert -> deviceIds.contains(alert.getDeviceId()))
                 .map(AlertResourceFromEntityAssembler::toResourceFromEntity)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @Operation(summary = "Confirm that an active alert is being attended")
+    @Operation(summary = "Confirm that an active alert of the gallery is being attended",
+            description = "Answers 404 alert_not_found and 409 alert_cannot_be_acknowledged.")
     @PatchMapping("/{alertId}/acknowledge")
     @PreAuthorize("hasRole('GALLERY_ADMINISTRATOR')")
     public ResponseEntity<AlertResource> acknowledgeAlert(@PathVariable Long alertId) {
@@ -55,7 +62,8 @@ public class AlertsController {
         return ResponseEntity.ok(AlertResourceFromEntityAssembler.toResourceFromEntity(alert));
     }
 
-    @Operation(summary = "Resolve an acknowledged alert with the result of the attention")
+    @Operation(summary = "Resolve an acknowledged alert of the gallery with the result of the attention",
+            description = "Answers 404 alert_not_found and 409 alert_cannot_be_resolved.")
     @PatchMapping(value = "/{alertId}/resolve", consumes = APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('GALLERY_ADMINISTRATOR')")
     public ResponseEntity<AlertResource> resolveAlert(@PathVariable Long alertId,
