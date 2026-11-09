@@ -123,6 +123,25 @@ log. The context also reacts to `UtilityBillIssuedEvent` by notifying the tenant
 `PropertyCommunicationContextFacade` so other contexts (for example Safety) can notify a tenant without knowing
 the notification model.
 
+## Resource and Asset Management
+
+| Method and path | Purpose | Errors |
+|---|---|---|
+| `GET /resources` | Catalog of monitored resources (stands and common areas) that units can be linked to | |
+| `GET /iot-devices` | Devices installed in the resources of the administrator's gallery | |
+| `GET /iot-devices/{id}` | A device of the gallery | 404 `iot_device_not_found` |
+| `POST /iot-devices` | Install a device on a resource linked to a unit of the gallery | 404 `resource_not_found`; 409 `serial_number_already_registered` |
+| `PATCH /iot-devices/{id}/deactivation` | Stop the data reception of a device, with an optional `reason` | 404 `iot_device_not_found`; 409 `iot_device_already_inactive` |
+| `PATCH /iot-devices/{id}/reactivation` | Resume the data reception of a device | 404 `iot_device_not_found`; 409 `iot_device_already_active` |
+
+Rules: the serial number of a device is unique and stored in upper case; each device is equipped by its node type,
+following the IoT device design (intrusion: motion sensor and alarm; smoke: smoke, temperature and humidity sensors;
+consumption: electricity and water meters; common area: motion sensor; camera: no sensors), and every node has a
+status LED. A device is faulty when its supply voltage is outside 4.5–5.5 V, and disconnected when it has not
+reported for 15 minutes; an inactive device ignores its reports. Sample resources are seeded on startup. The facade
+`AssetsContextFacade` lets other contexts find the resource of a device, list the devices of some resources, check
+whether a device is active and record its reports.
+
 ## Conventions
 
 - Branches: `feature/<name>` from `develop`; releases through `release/x.y.z` into `main`.
