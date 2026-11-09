@@ -14,8 +14,8 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 
 /**
- * Reads from Monitoring the consumption that supports a bill. Until Property Management is
- * available, the unit is identified by the resource that Monitoring records its consumption against.
+ * Reads from Monitoring the consumption that supports a bill. Monitoring records it against the
+ * resource of Resource and Asset Management linked to the billed unit.
  */
 @Service("utilityBillingExternalMonitoringService")
 public class ExternalMonitoringService {
@@ -30,8 +30,8 @@ public class ExternalMonitoringService {
     }
 
     /** Consumption of the utility in the month, or empty when Monitoring has no record for it. */
-    public Optional<ConsumptionSummary> fetchConsumption(Long unitId, UtilityType utilityType, YearMonth period) {
-        return Optional.ofNullable(monitoringContextFacade.fetchMonthlyConsumption(unitId, utilityType.name(), period))
+    public Optional<ConsumptionSummary> fetchConsumption(Long resourceId, UtilityType utilityType, YearMonth period) {
+        return Optional.ofNullable(monitoringContextFacade.fetchMonthlyConsumption(resourceId, utilityType.name(), period))
                 .map(value -> new ConsumptionSummary(utilityType, scaled(value)));
     }
 
@@ -39,10 +39,10 @@ public class ExternalMonitoringService {
      * Average monthly consumption over the months before the billed one that have a record, or
      * empty when there is no history.
      */
-    public Optional<BaselineConsumption> fetchBaseline(Long unitId, UtilityType utilityType, YearMonth period) {
+    public Optional<BaselineConsumption> fetchBaseline(Long resourceId, UtilityType utilityType, YearMonth period) {
         return IntStream.rangeClosed(1, BASELINE_MONTHS)
                 .mapToObj(monthsBack -> monitoringContextFacade.fetchMonthlyConsumption(
-                        unitId, utilityType.name(), period.minusMonths(monthsBack)))
+                        resourceId, utilityType.name(), period.minusMonths(monthsBack)))
                 .filter(Objects::nonNull)
                 .mapToDouble(Double::doubleValue)
                 .average()

@@ -5,8 +5,8 @@ import com.vanguardtech.storepulse.platform.utilitybilling.interfaces.rest.resou
 
 public class GenerateUtilityBillCommandFromResourceAssembler {
 
-    public static GenerateUtilityBillCommand toCommandFromResource(GenerateUtilityBillResource resource) {
-        return new GenerateUtilityBillCommand(resource.unitId(), resource.unitCode(), resource.unitName(),
-                resource.tenantName(), resource.period());
+    public static GenerateUtilityBillCommand toCommandFromResource(GenerateUtilityBillResource resource,
+                                                                   Long administratorId) {
+        return new GenerateUtilityBillCommand(resource.unitId(), administratorId, resource.period());
     }
 }

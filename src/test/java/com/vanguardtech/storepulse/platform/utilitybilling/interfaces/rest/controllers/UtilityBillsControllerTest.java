@@ -1,5 +1,7 @@
 package com.vanguardtech.storepulse.platform.utilitybilling.interfaces.rest.controllers;
 
+import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalIamService;
+import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalPropertyService;
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.exceptions.UtilityBillingError;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.commands.GenerateUtilityBillCommand;
@@ -33,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class UtilityBillsControllerTest {
 
     private static final String REQUEST =
-            "{\"unitId\":1,\"unitCode\":\"A-01\",\"unitName\":\"Local A-01\",\"tenantName\":\"Tienda Sol\",\"period\":\"2026-10\"}";
+            "{\"unitId\":1,\"period\":\"2026-10\"}";
 
     @TestConfiguration
     @EnableMethodSecurity
@@ -48,6 +50,12 @@ class UtilityBillsControllerTest {
 
     @MockitoBean
     private UtilityBillQueryService utilityBillQueryService;
+
+    @MockitoBean
+    private ExternalPropertyService externalPropertyService;
+
+    @MockitoBean
+    private ExternalIamService externalIamService;
 
     @Test
     @WithMockUser(roles = "GALLERY_ADMINISTRATOR")

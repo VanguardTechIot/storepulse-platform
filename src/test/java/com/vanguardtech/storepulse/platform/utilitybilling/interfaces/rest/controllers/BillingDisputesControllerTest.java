@@ -1,5 +1,8 @@
 package com.vanguardtech.storepulse.platform.utilitybilling.interfaces.rest.controllers;
 
+import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalIamService;
+import com.vanguardtech.storepulse.platform.utilitybilling.application.internal.outboundservices.acl.ExternalPropertyService;
+import com.vanguardtech.storepulse.platform.utilitybilling.domain.services.UtilityBillQueryService;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.aggregates.BillingDispute;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.commands.RaiseBillingDisputeCommand;
 import com.vanguardtech.storepulse.platform.utilitybilling.domain.model.valueobjects.DisputeReason;
@@ -42,6 +45,15 @@ class BillingDisputesControllerTest {
 
     @MockitoBean
     private BillingDisputeQueryService billingDisputeQueryService;
+
+    @MockitoBean
+    private UtilityBillQueryService utilityBillQueryService;
+
+    @MockitoBean
+    private ExternalPropertyService externalPropertyService;
+
+    @MockitoBean
+    private ExternalIamService externalIamService;
 
     @Test
     @WithMockUser(roles = "TENANT")
