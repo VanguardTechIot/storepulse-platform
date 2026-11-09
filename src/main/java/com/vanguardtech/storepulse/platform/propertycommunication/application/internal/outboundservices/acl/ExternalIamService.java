@@ -6,6 +6,8 @@ import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRul
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 /** Reads from Identity and Access Management who sends the request and whether a tenant exists. */
 @Service("propertyCommunicationExternalIamService")
 public class ExternalIamService {
@@ -33,5 +35,9 @@ public class ExternalIamService {
 
     public boolean existsUser(Long userId) {
         return iamContextFacade.existsUserById(userId);
+    }
+
+    public Optional<String> fetchEmail(Long userId) {
+        return iamContextFacade.fetchEmailByUserId(userId);
     }
 }
