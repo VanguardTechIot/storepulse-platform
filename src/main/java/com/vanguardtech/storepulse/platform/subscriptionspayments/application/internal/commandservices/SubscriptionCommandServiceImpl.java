@@ -4,6 +4,7 @@ import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRul
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.ResourceNotFoundException;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.application.internal.outboundservices.PaymentGateway;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.application.internal.outboundservices.acl.ExternalIamService;
+import com.vanguardtech.storepulse.platform.subscriptionspayments.application.internal.outboundservices.acl.ExternalPropertyManagementService;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.exceptions.SubscriptionsError;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.aggregates.Payment;
 import com.vanguardtech.storepulse.platform.subscriptionspayments.domain.model.aggregates.Subscription;
@@ -39,10 +40,12 @@ public class SubscriptionCommandServiceImpl implements SubscriptionCommandServic
     private final PaymentRepository paymentRepository;
     private final PaymentGateway paymentGateway;
     private final ExternalIamService externalIamService;
+    private final ExternalPropertyManagementService externalPropertyManagementService;
 
     /**
      * Contracts the plan (or changes to it) and pays it. The subscription is activated only when the
      * gateway accepts the charge; a rejected charge is recorded and leaves the subscription untouched.
+     * The gallery must be the one the administrator registered in Property Management.
      */
     @Override
     public Subscription handle(RequestSubscriptionCommand command) {
@@ -50,6 +53,8 @@ public class SubscriptionCommandServiceImpl implements SubscriptionCommandServic
         var plan = planRepository.findById(command.planId())
                 .orElseThrow(() -> new ResourceNotFoundException(SubscriptionsError.PLAN_NOT_FOUND));
         var card = PaymentCard.of(command.cardNumber(), command.cardExpiry(), YearMonth.now(ZoneOffset.UTC));
+        if (!externalPropertyManagementService.isGalleryOfAdministrator(command.galleryId(), administratorId))
+            throw new ResourceNotFoundException(SubscriptionsError.GALLERY_NOT_FOUND);
         var subscription = subscriptionRepository.findByGalleryId(command.galleryId())
                 .map(existing -> ownedBy(existing, administratorId))
                 .orElseGet(() -> subscriptionRepository.save(new Subscription(command.galleryId(),
