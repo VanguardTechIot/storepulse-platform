@@ -4,6 +4,8 @@ import com.vanguardtech.storepulse.platform.dashboardanalytics.domain.model.valu
 import com.vanguardtech.storepulse.platform.monitoring.interfaces.acl.MonitoringContextFacade;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
+
 /** Reads from Monitoring the consumption of the current month. */
 @Service("analyticsExternalMonitoringService")
 public class ExternalMonitoringService {
@@ -14,8 +16,8 @@ public class ExternalMonitoringService {
         this.monitoringContextFacade = monitoringContextFacade;
     }
 
-    public ConsumptionSummary fetchCurrentMonthConsumption() {
-        return new ConsumptionSummary(monitoringContextFacade.fetchCurrentMonthConsumption("ELECTRICITY"),
-                monitoringContextFacade.fetchCurrentMonthConsumption("WATER"));
+    public ConsumptionSummary fetchCurrentMonthConsumption(Collection<Long> resourceIds) {
+        return new ConsumptionSummary(monitoringContextFacade.fetchCurrentMonthConsumption(resourceIds, "ELECTRICITY"),
+                monitoringContextFacade.fetchCurrentMonthConsumption(resourceIds, "WATER"));
     }
 }

@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,10 +24,10 @@ class ExternalSafetyServiceTest {
 
     @Test
     void countsMissingStatusesAsZero() {
-        when(safetyContextFacade.countAlertsByStatus()).thenReturn(Map.of("ACTIVE", 2L));
-        when(safetyContextFacade.countOpenAlertsBySensorType()).thenReturn(Map.of("SMOKE", 2L));
+        when(safetyContextFacade.countAlertsByStatus(List.of(3L))).thenReturn(Map.of("ACTIVE", 2L));
+        when(safetyContextFacade.countOpenAlertsBySensorType(List.of(3L))).thenReturn(Map.of("SMOKE", 2L));
 
-        var summary = externalSafetyService.fetchAlertsSummary();
+        var summary = externalSafetyService.fetchAlertsSummary(List.of(3L));
 
         assertEquals(2, summary.open());
         assertEquals(0, summary.acknowledged());
