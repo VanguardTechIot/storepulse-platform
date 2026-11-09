@@ -5,6 +5,8 @@ import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.Act
 import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.AssetStatus;
 import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.ConnectivityStatus;
 import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.IoTDeviceType;
+import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.MeterType;
+import com.vanguardtech.storepulse.platform.assets.domain.model.valueobjects.SensorType;
 import com.vanguardtech.storepulse.platform.assets.domain.exceptions.AssetsError;
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
 import jakarta.persistence.*;
@@ -91,6 +93,7 @@ public class IoTDevice {
         this.status = AssetStatus.ACTIVE;
         this.connectivity = ConnectivityStatus.DISCONNECTED;
         this.bufferedEvents = 0;
+        equipFor(type);
     }
 
     public boolean isActive() {
@@ -152,5 +155,28 @@ public class IoTDevice {
     public void addActuator(ActuatorType actuator){
         if(!actuators.contains(actuator))
             actuators.add(actuator);
+    }
+    /** Installs the sensors, meters and actuators that each node type has in the IoT device design. */
+    private void equipFor(IoTDeviceType type) {
+        switch (type) {
+            case INTRUSION_NODE -> {
+                addSensor(new Sensor(SensorType.MOTION, null));
+                addActuator(ActuatorType.ALARM);
+            }
+            case SMOKE_NODE -> {
+                addSensor(new Sensor(SensorType.SMOKE, "ppm"));
+                addSensor(new Sensor(SensorType.TEMPERATURE, "°C"));
+                addSensor(new Sensor(SensorType.HUMIDITY, "%"));
+            }
+            case CONSUMPTION_NODE -> {
+                addMeter(new Meter(MeterType.ELECTRICITY));
+                addMeter(new Meter(MeterType.WATER));
+            }
+            case COMMON_AREA_NODE -> addSensor(new Sensor(SensorType.MOTION, null));
+            case CAMERA_NODE -> {
+                // The camera produces images, handled by the edge; it has no sensor readings.
+            }
+        }
+        addActuator(ActuatorType.LED);
     }
 }
