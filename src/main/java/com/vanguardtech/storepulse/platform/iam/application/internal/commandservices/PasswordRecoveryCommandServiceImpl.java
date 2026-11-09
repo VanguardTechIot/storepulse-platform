@@ -1,7 +1,6 @@
 package com.vanguardtech.storepulse.platform.iam.application.internal.commandservices;
 
 import com.vanguardtech.storepulse.platform.iam.application.internal.outboundservices.PasswordHasher;
-import com.vanguardtech.storepulse.platform.iam.application.internal.outboundservices.RecoveryCodeSender;
 import com.vanguardtech.storepulse.platform.iam.domain.exceptions.IamError;
 import com.vanguardtech.storepulse.platform.iam.domain.model.aggregates.PasswordRecovery;
 import com.vanguardtech.storepulse.platform.iam.domain.model.commands.RequestPasswordResetCommand;
@@ -13,6 +12,7 @@ import com.vanguardtech.storepulse.platform.iam.domain.model.valueobjects.Passwo
 import com.vanguardtech.storepulse.platform.iam.domain.services.PasswordRecoveryCommandService;
 import com.vanguardtech.storepulse.platform.iam.infrastructure.persistence.jpa.repositories.PasswordRecoveryRepository;
 import com.vanguardtech.storepulse.platform.iam.infrastructure.persistence.jpa.repositories.UserAccountRepository;
+import com.vanguardtech.storepulse.platform.shared.application.outboundservices.EmailSender;
 import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRuleException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,10 +25,17 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class PasswordRecoveryCommandServiceImpl implements PasswordRecoveryCommandService {
 
+    private static final String SUBJECT = "Código de recuperación de StorePulse";
+    private static final String TEXT = """
+            Tu código para restablecer la contraseña de StorePulse es %s.
+
+            El código vence en %d minutos y solo puede usarse una vez.
+            Si no solicitaste este cambio, ignora este mensaje: tu contraseña no cambiará.""";
+
     private final UserAccountRepository userAccountRepository;
     private final PasswordRecoveryRepository passwordRecoveryRepository;
     private final PasswordHasher passwordHasher;
-    private final RecoveryCodeSender recoveryCodeSender;
+    private final EmailSender emailSender;
 
     /**
      * The code is delivered inside the transaction: when it cannot be sent, the recovery is not
@@ -48,7 +55,8 @@ public class PasswordRecoveryCommandServiceImpl implements PasswordRecoveryComma
                 new PasswordRecovery(account.getUserId(), passwordHasher.encode(code.value()), now));
         account.requestPasswordReset(now);
         userAccountRepository.save(account);
-        recoveryCodeSender.send(account.getEmail(), code, passwordRecovery.getExpiresAt());
+        emailSender.send(account.getEmail().address(), SUBJECT,
+                TEXT.formatted(code.value(), PasswordRecovery.VALIDITY.toMinutes()));
         return passwordRecovery.getExpiresAt();
     }
 
