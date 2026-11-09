@@ -9,7 +9,7 @@ import java.util.Locale;
 
 /**
  * Profile photo, stored as a link to the image. Only JPG and PNG images served over HTTP(S) are
- * supported (mock-up 12); any other format is answered with 415 (TS-04).
+ * supported; any other format is answered with 415.
  *
  * @param url the trimmed link to the image
  */
@@ -31,8 +31,7 @@ public record ProfilePhoto(String url) {
     }
 
     /**
-     * The photo is optional: an empty value removes it, so the default image is shown again
-     * (US-06, scenario 2).
+     * The photo is optional: an empty value removes it, so the default image is shown again.
      *
      * @param url link typed by the user, possibly empty
      * @return the photo, or {@code null} when the link is empty

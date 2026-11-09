@@ -1,7 +1,7 @@
 package com.vanguardtech.storepulse.platform.profilespreferences.domain.model.commands;
 
 /**
- * Replaces the personal and contact data of the profile and its photo (US-07), as
+ * Replaces the personal and contact data of the profile and its photo, as
  * {@code PUT /users/{userId}/profile} receives them. The email is also the sign-in email, so
  * changing it changes how the user signs in.
  *
