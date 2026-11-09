@@ -12,12 +12,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * Personal data of a StorePulse user (Aggregate Root): name, contact data and photo (US-06, US-07).
+ * Personal data of a StorePulse user (Aggregate Root): name, contact data and photo.
  * The role and the credentials belong to Identity and Access Management; an account has exactly one
  * profile.
  *
  * <p>Every value is validated before anything changes, so invalid data never alters the current
- * profile (US-07, scenario 2).
+ * profile.
  */
 @Entity
 @Table(name = "profiles")
@@ -71,7 +71,7 @@ public class Profile extends AuditableAbstractAggregateRoot<Profile> {
     }
 
     /**
-     * Replaces the personal and contact data and the photo (US-07).
+     * Replaces the personal and contact data and the photo.
      *
      * @param firstName   first name
      * @param lastName    last name

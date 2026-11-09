@@ -1,7 +1,7 @@
 package com.vanguardtech.storepulse.platform.profilespreferences.interfaces.rest.resources;
 
 /**
- * Profile as {@code GET /users/{userId}/profile} returns it (TS-04), the same shape as
+ * Profile as {@code GET /users/{userId}/profile} returns it, the same shape as
  * {@code ProfileResource} in the web application.
  *
  * @param id          identifier of the profile

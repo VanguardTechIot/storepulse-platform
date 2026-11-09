@@ -1,7 +1,7 @@
 package com.vanguardtech.storepulse.platform.profilespreferences.domain.model.queries;
 
 /**
- * Looks up the profile of an account (US-06).
+ * Looks up the profile of an account.
  *
  * @param userId identifier of the account that owns the profile
  */

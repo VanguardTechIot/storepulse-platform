@@ -16,8 +16,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Profile of a user (TS-04): view it (US-06) and edit it (US-07). Each user reaches only their own
- * profile; any other answers 403 {@code access_denied}.
+ * Profile of a user: view it and edit it. Each user reaches only their own profile; any other
+ * answers 403 {@code access_denied}.
  */
 @RestController
 @RequestMapping("/users/{userId}/profile")

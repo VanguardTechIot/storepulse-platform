@@ -8,7 +8,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 /**
- * Creates the profile when Identity and Access Management registers an account (US-01).
+ * Creates the profile when Identity and Access Management registers an account.
  *
  * <p>It runs synchronously inside the registration transaction: if the profile cannot be created,
  * the account is not created either, so there is never an account without a profile.

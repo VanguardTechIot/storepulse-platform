@@ -4,7 +4,7 @@ import com.vanguardtech.storepulse.platform.shared.domain.exceptions.BusinessRul
 
 /**
  * The profile photo is not a supported image. Unlike other business rule violations it is answered
- * with {@code 415 Unsupported Media Type} (TS-04).
+ * with {@code 415 Unsupported Media Type}.
  */
 public class UnsupportedPhotoFormatException extends BusinessRuleException {
 

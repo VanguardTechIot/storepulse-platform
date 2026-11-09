@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
- * Answers an unsupported profile photo with {@code 415 Unsupported Media Type} (TS-04) instead of
+ * Answers an unsupported profile photo with {@code 415 Unsupported Media Type} instead of
  * the {@code 409 Conflict} that {@link GlobalExceptionHandler} gives to other business rule
  * violations. It runs first, so every other exception still reaches the global handler.
  */
