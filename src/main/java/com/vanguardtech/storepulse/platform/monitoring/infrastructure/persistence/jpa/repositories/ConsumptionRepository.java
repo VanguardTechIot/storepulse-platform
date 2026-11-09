@@ -17,7 +17,5 @@ public interface ConsumptionRepository extends JpaRepository<Consumption, Long> 
 
     List<Consumption> findByResourceIdOrderByPeriodStartAsc(Long resourceId);
 
-    List<Consumption> findAllByOrderByPeriodStartAsc();
-
     List<Consumption> findByResourceIdInOrderByPeriodStartAsc(Collection<Long> resourceIds);
 }
