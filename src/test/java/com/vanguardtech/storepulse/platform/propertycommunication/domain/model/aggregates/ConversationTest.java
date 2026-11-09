@@ -28,6 +28,15 @@ class ConversationTest {
     }
 
     @Test
+    void knowsTheRoleOfEachParticipantOnly() {
+        var conversation = new Conversation(5L, 3L, 7L, "Goteo en el techo");
+
+        assertEquals(SenderRole.TENANT, conversation.roleOf(5L).orElseThrow());
+        assertEquals(SenderRole.GALLERY_ADMINISTRATOR, conversation.roleOf(7L).orElseThrow());
+        assertTrue(conversation.roleOf(9L).isEmpty());
+    }
+
+    @Test
     void rejectsAnEmptyOrTooLongSubject() {
         assertEquals(PropertyCommunicationError.INVALID_SUBJECT, errorOf(() -> new Conversation(5L, 3L, 7L, " ")));
         assertEquals(PropertyCommunicationError.INVALID_SUBJECT, errorOf(() -> new Conversation(5L, 3L, 7L, "x".repeat(201))));

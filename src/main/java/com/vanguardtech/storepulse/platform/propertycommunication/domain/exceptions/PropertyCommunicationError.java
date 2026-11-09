@@ -21,6 +21,8 @@ public enum PropertyCommunicationError {
     UNIT_ALREADY_ASSIGNED,
     ASSIGNMENT_NOT_FOUND,
     ASSIGNMENT_NOT_ACTIVE,
+    /** The tenant has no active store with the gallery administrator, so they cannot talk yet. */
+    NO_ACTIVE_ASSIGNMENT,
     INVALID_NOTIFICATION_TITLE,
     INVALID_NOTIFICATION_BODY,
     NOTIFICATION_NOT_FOUND,

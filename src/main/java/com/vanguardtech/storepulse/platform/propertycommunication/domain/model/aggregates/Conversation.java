@@ -11,6 +11,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Conversation between a tenant and the gallery administrator (Aggregate Root). It owns its
@@ -68,6 +69,15 @@ public class Conversation extends AuditableAbstractAggregateRoot<Conversation> {
 
     public static boolean isValidSubject(String subject) {
         return subject != null && !subject.isBlank() && subject.trim().length() <= SUBJECT_MAX_LENGTH;
+    }
+
+    /** @return the role of the user in this conversation, or empty when the user does not take part in it */
+    public Optional<SenderRole> roleOf(Long userId) {
+        if (tenantId.equals(userId))
+            return Optional.of(SenderRole.TENANT);
+        if (galleryAdministratorId.equals(userId))
+            return Optional.of(SenderRole.GALLERY_ADMINISTRATOR);
+        return Optional.empty();
     }
 
     public boolean isOpen() {
