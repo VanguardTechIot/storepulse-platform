@@ -6,13 +6,14 @@ import com.vanguardtech.storepulse.platform.assets.interfaces.rest.resources.Reg
 
 public class RegisterIoTDeviceCommandFromResourceAssembler {
 
-    public static RegisterIoTDeviceCommand toCommandFromResource(RegisterIoTDeviceResource resource){
+    public static RegisterIoTDeviceCommand toCommandFromResource(RegisterIoTDeviceResource resource, Long administratorId){
         if (resource.type() == null)
             throw new IllegalArgumentException("Device type is required");
         return new RegisterIoTDeviceCommand(
                 resource.serialNumber(),
-                IoTDeviceType.valueOf(resource.type()),
-                resource.resourceId()
+                IoTDeviceType.valueOf(resource.type().trim().toUpperCase()),
+                resource.resourceId(),
+                administratorId
         );
     }
 }
