@@ -1,7 +1,7 @@
 package com.vanguardtech.storepulse.platform.monitoring.interfaces.rest.controllers;
 
-import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetAllConsumptionQuery;
-import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetConsumptionByResourceIdQuery;
+import com.vanguardtech.storepulse.platform.monitoring.application.internal.outboundservices.acl.ExternalPropertyCommunicationService;
+import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetConsumptionByResourceIdsQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.services.ConsumptionQueryService;
 import com.vanguardtech.storepulse.platform.monitoring.interfaces.rest.resources.ConsumptionResource;
 import com.vanguardtech.storepulse.platform.monitoring.interfaces.rest.transform.ConsumptionResourceFromEntityAssembler;
@@ -23,18 +23,22 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public class ConsumptionController {
 
     private final ConsumptionQueryService consumptionQueryService;
+    private final ExternalPropertyCommunicationService externalPropertyCommunicationService;
 
-    public ConsumptionController(ConsumptionQueryService consumptionQueryService) {
+    public ConsumptionController(ConsumptionQueryService consumptionQueryService,
+                                 ExternalPropertyCommunicationService externalPropertyCommunicationService) {
         this.consumptionQueryService = consumptionQueryService;
+        this.externalPropertyCommunicationService = externalPropertyCommunicationService;
     }
 
-    @Operation(summary = "Get consumption per period, optionally filtered by resource")
+    @Operation(summary = "Get the consumption per period of the resources visible to the user, optionally of one resource",
+            description = "The administrator sees the resources of the gallery and the tenant the one of the store.")
     @GetMapping
     public ResponseEntity<List<ConsumptionResource>> getConsumption(@RequestParam(required = false) Long resourceId) {
-        var consumption = resourceId == null
-                ? consumptionQueryService.handle(new GetAllConsumptionQuery())
-                : consumptionQueryService.handle(new GetConsumptionByResourceIdQuery(resourceId));
-        return ResponseEntity.ok(consumption.stream()
+        var resourceIds = externalPropertyCommunicationService.fetchResourceIdsVisibleToAuthenticatedUser().stream()
+                .filter(id -> resourceId == null || id.equals(resourceId))
+                .toList();
+        return ResponseEntity.ok(consumptionQueryService.handle(new GetConsumptionByResourceIdsQuery(resourceIds)).stream()
                 .map(ConsumptionResourceFromEntityAssembler::toResourceFromEntity)
                 .toList());
     }

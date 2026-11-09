@@ -3,6 +3,7 @@ package com.vanguardtech.storepulse.platform.monitoring.application.internal.que
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.aggregates.Consumption;
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetAllConsumptionQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetConsumptionByResourceIdQuery;
+import com.vanguardtech.storepulse.platform.monitoring.domain.model.queries.GetConsumptionByResourceIdsQuery;
 import com.vanguardtech.storepulse.platform.monitoring.domain.services.ConsumptionQueryService;
 import com.vanguardtech.storepulse.platform.monitoring.infrastructure.persistence.jpa.repositories.ConsumptionRepository;
 import org.springframework.stereotype.Service;
@@ -28,5 +29,11 @@ public class ConsumptionQueryServiceImpl implements ConsumptionQueryService {
     @Override
     public List<Consumption> handle(GetConsumptionByResourceIdQuery query) {
         return consumptionRepository.findByResourceIdOrderByPeriodStartAsc(query.resourceId());
+    }
+
+    @Override
+    public List<Consumption> handle(GetConsumptionByResourceIdsQuery query) {
+        if (query.resourceIds().isEmpty()) return List.of();
+        return consumptionRepository.findByResourceIdInOrderByPeriodStartAsc(query.resourceIds());
     }
 }

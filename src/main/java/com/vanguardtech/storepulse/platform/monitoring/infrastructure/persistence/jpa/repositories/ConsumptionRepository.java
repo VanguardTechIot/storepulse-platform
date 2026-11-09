@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,4 +18,6 @@ public interface ConsumptionRepository extends JpaRepository<Consumption, Long> 
     List<Consumption> findByResourceIdOrderByPeriodStartAsc(Long resourceId);
 
     List<Consumption> findAllByOrderByPeriodStartAsc();
+
+    List<Consumption> findByResourceIdInOrderByPeriodStartAsc(Collection<Long> resourceIds);
 }
