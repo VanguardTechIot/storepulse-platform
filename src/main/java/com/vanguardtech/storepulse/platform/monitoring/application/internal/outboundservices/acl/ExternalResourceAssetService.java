@@ -29,6 +29,10 @@ public class ExternalResourceAssetService {
                 externalPropertyCommunicationService.fetchResourceIdsVisibleToAuthenticatedUser());
     }
 
+    public List<Long> fetchDeviceIdsByResourceId(Long resourceId) {
+        return assetsContextFacade.fetchIoTDeviceIdsByResourceIds(List.of(resourceId));
+    }
+
     public boolean isDeviceActive(Long deviceId) {
         return assetsContextFacade.isIoTDeviceActive(deviceId);
     }
