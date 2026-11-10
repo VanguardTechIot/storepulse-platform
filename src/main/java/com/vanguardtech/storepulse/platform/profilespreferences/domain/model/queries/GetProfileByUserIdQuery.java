@@ -1,0 +1,9 @@
+package com.vanguardtech.storepulse.platform.profilespreferences.domain.model.queries;
+
+/**
+ * Looks up the profile of an account.
+ *
+ * @param userId identifier of the account that owns the profile
+ */
+public record GetProfileByUserIdQuery(Long userId) {
+}
