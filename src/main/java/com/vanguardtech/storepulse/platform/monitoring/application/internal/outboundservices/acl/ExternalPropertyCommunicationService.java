@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/** Reads from Property Communication which monitored resources the authenticated user may see. */
 @Service("monitoringExternalPropertyCommunicationService")
 public class ExternalPropertyCommunicationService {
 
