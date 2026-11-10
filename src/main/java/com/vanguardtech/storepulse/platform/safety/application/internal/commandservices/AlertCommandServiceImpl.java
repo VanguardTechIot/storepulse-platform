@@ -1,5 +1,6 @@
 package com.vanguardtech.storepulse.platform.safety.application.internal.commandservices;
 
+import com.vanguardtech.storepulse.platform.safety.application.internal.outboundservices.acl.ExternalAlertNotificationService;
 import com.vanguardtech.storepulse.platform.safety.application.internal.outboundservices.acl.ExternalAssetsService;
 import com.vanguardtech.storepulse.platform.safety.domain.exceptions.SafetyError;
 import com.vanguardtech.storepulse.platform.safety.domain.model.aggregates.Alert;
@@ -32,6 +33,7 @@ public class AlertCommandServiceImpl implements AlertCommandService {
     private final DeviceStateRepository deviceStateRepository;
     private final SafetyRuleRepository safetyRuleRepository;
     private final ExternalAssetsService externalAssetsService;
+    private final ExternalAlertNotificationService externalAlertNotificationService;
 
     @Override
     @Transactional
@@ -40,9 +42,10 @@ public class AlertCommandServiceImpl implements AlertCommandService {
         if (rule.isEmpty() || hasOpenAlert(command))
             return new MeasurementAssessment(
                     refreshDeviceState(command.deviceId(), command.recordedAt()), ResponseAction.NONE, false);
-        alertRepository.save(new Alert(
+        var alert = alertRepository.save(new Alert(
                 rule.get().getId(), command.deviceId(), command.measurementId(), command.sensorType(), command.value(),
                 command.recordedAt()));
+        externalAlertNotificationService.notifyAlert(alert);
         return new MeasurementAssessment(
                 refreshDeviceState(command.deviceId(), command.recordedAt()), rule.get().getResponseAction(), true);
     }
