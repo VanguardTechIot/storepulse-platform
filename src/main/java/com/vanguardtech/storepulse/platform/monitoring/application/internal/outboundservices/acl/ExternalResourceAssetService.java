@@ -37,7 +37,7 @@ public class ExternalResourceAssetService {
         return assetsContextFacade.isIoTDeviceActive(deviceId);
     }
 
-    public void recordDeviceReport(Long deviceId, Instant reportedAt) {
-        assetsContextFacade.recordIoTDeviceReport(deviceId, reportedAt, null, null);
+    public void recordDeviceReport(Long deviceId, Instant reportedAt, Double supplyVoltage, Integer bufferedEvents) {
+        assetsContextFacade.recordIoTDeviceReport(deviceId, reportedAt, supplyVoltage, bufferedEvents);
     }
 }
