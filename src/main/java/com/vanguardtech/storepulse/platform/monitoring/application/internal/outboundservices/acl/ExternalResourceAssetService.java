@@ -3,6 +3,7 @@ package com.vanguardtech.storepulse.platform.monitoring.application.internal.out
 import com.vanguardtech.storepulse.platform.assets.interfaces.acl.AssetsContextFacade;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,5 +31,9 @@ public class ExternalResourceAssetService {
 
     public boolean isDeviceActive(Long deviceId) {
         return assetsContextFacade.isIoTDeviceActive(deviceId);
+    }
+
+    public void recordDeviceReport(Long deviceId, Instant reportedAt) {
+        assetsContextFacade.recordIoTDeviceReport(deviceId, reportedAt, null, null);
     }
 }

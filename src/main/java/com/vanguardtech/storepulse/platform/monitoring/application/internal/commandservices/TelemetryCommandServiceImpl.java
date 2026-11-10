@@ -41,6 +41,7 @@ public class TelemetryCommandServiceImpl implements TelemetryCommandService {
         command.measurements().forEach(measurement -> telemetry.addMeasurement(
                 measurement.type(), new MeasurementValue(measurement.value()), measurement.recordedAt()));
         var saved = telemetryRepository.save(telemetry);
+        externalResourceAssetService.recordDeviceReport(command.deviceId(), saved.getReceivedAt());
         externalResourceAssetService.fetchResourceIdByDeviceId(command.deviceId())
                 .ifPresent(resourceId -> accumulateConsumption(resourceId, saved));
         return new TelemetryRegistration(saved, externalSafetyService.evaluate(saved));
