@@ -6,10 +6,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * Reads from Property Communication and Resource and Asset Management which devices the
- * authenticated user may see: the ones installed in the resources of its gallery or store.
- */
 @Service("safetyExternalAssetsService")
 public class ExternalAssetsService {
 

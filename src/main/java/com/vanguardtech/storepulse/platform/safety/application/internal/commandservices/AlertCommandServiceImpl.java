@@ -90,7 +90,6 @@ public class AlertCommandServiceImpl implements AlertCommandService {
         return status;
     }
 
-    /** The alert, only when its device is visible to the authenticated user. */
     private Alert findAlert(Long alertId) {
         return alertRepository.findById(alertId)
                 .filter(alert -> externalAssetsService.fetchDeviceIdsVisibleToAuthenticatedUser()
