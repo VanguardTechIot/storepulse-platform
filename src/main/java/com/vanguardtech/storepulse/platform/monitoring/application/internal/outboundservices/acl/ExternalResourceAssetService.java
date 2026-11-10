@@ -23,7 +23,6 @@ public class ExternalResourceAssetService {
         return assetsContextFacade.fetchResourceIdByIoTDeviceId(deviceId);
     }
 
-    /** Devices installed in the resources visible to the authenticated user. */
     public List<Long> fetchDeviceIdsVisibleToAuthenticatedUser() {
         return assetsContextFacade.fetchIoTDeviceIdsByResourceIds(
                 externalPropertyCommunicationService.fetchResourceIdsVisibleToAuthenticatedUser());
