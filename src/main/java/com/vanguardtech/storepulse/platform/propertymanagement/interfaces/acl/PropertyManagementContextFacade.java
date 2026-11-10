@@ -24,6 +24,8 @@ public interface PropertyManagementContextFacade {
     /** @return the monitored resource of Resource and Asset Management linked to the unit, if any */
     Optional<Long> fetchResourceIdByUnitId(Long unitId);
 
+    Optional<CommercialUnitSummary> fetchUnitByResourceId(Long resourceId);
+
     /** @return the monitored resources linked to the active units of the gallery */
     List<Long> fetchResourceIdsByGalleryId(Long galleryId);
 

@@ -68,6 +68,11 @@ public class PropertyManagementContextFacadeImpl implements PropertyManagementCo
     }
 
     @Override
+    public Optional<CommercialUnitSummary> fetchUnitByResourceId(Long resourceId) {
+        return unitRepository.findFirstByResourceIdAndActiveTrue(resourceId).map(this::summarize);
+    }
+
+    @Override
     public List<Long> fetchResourceIdsByGalleryId(Long galleryId) {
         return unitRepository.findByGalleryIdAndActiveTrue(galleryId).stream()
                 .map(CommercialUnit::getResourceId)

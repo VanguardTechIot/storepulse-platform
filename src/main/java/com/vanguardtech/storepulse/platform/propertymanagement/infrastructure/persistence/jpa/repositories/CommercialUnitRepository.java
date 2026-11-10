@@ -12,6 +12,8 @@ public interface CommercialUnitRepository extends JpaRepository<CommercialUnit, 
     List<CommercialUnit> findByGalleryIdOrderByFloorAscCodeAsc(Long galleryId);
     List<CommercialUnit> findByGalleryIdAndActiveTrue(Long galleryId);
 
+    Optional<CommercialUnit> findFirstByResourceIdAndActiveTrue(Long resourceId);
+
     /** The unit, only when it belongs to the gallery of the administrator. */
     @Query("select u from CommercialUnit u where u.id = :id and u.galleryId in "
             + "(select g.id from CommercialGallery g where g.administratorId = :administratorId)")
