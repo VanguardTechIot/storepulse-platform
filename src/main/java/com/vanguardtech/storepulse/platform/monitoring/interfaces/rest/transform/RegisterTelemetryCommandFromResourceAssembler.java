@@ -11,6 +11,7 @@ public class RegisterTelemetryCommandFromResourceAssembler {
                 .map(measurement -> new RegisterMeasurementCommand(
                         measurement.type(), measurement.value(), measurement.recordedAt()))
                 .toList();
-        return new RegisterTelemetryCommand(resource.deviceId(), resource.receivedAt(), measurements);
+        return new RegisterTelemetryCommand(resource.deviceId(), resource.receivedAt(), resource.supplyVoltage(),
+                resource.bufferedEvents(), measurements);
     }
 }
